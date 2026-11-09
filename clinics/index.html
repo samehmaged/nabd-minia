@@ -1,0 +1,1137 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>نبض العيادات</title>
+<meta name="description" content="منظومة كروت تعريف عيادات التأمين الصحي بفرع المنيا — تصميم وتطوير د. سامح ماجد صابر">
+<meta name="author" content="د. سامح ماجد صابر">
+<meta name="theme-color" content="#07131b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='1' y='1' width='46' height='46' rx='13' fill='%230f2b38'/%3E%3Crect x='9' y='14' width='30' height='21' rx='4' fill='none' stroke='%23e7f2f5' stroke-width='2.4'/%3E%3Crect x='13' y='19' width='7' height='5' rx='1.2' fill='%23e8c77a'/%3E%3Cpath d='M13 30h4l2-3l2 5l2-2h12' fill='none' stroke='%234fd1c5' stroke-width='2.2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Aref+Ruqaa:wght@400;700&display=swap">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+
+/* Layout: sister system to «نبض الأسرّة» — same control-room shell; the centrepiece is a physical-looking clinic ID card, data panels below. Single dark look on purpose. */
+:root{
+  color-scheme:dark;
+  --bg:#07131b; --bg2:#0a1a24; --panel:#0e212d; --panel2:#132c3a; --line:#1d3a4a; --line2:#2a5266;
+  --fg:#e7f2f5; --mute:#93b2bf; --dim:#5f7f8c;
+  --accent:#4fd1c5; --accent-ink:#03201d;
+  --ok:#3ddc97; --bad:#ff6b5b; --warn:#ffc35a; --unk:#8aa3b0;
+  --r1:#62b6ff; --r2:#ffb454; --r3:#c792ff;
+  --f-display:'Readex Pro','IBM Plex Sans Arabic',system-ui,sans-serif;
+  --f-body:'IBM Plex Sans Arabic','Readex Pro','Segoe UI',Tahoma,sans-serif;
+  --f-sign:'Aref Ruqaa','Amiri','Traditional Arabic',serif;
+  --r:14px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6;direction:rtl;min-height:100vh;
+  background:radial-gradient(1100px 560px at 85% -10%,rgba(79,209,197,.10),transparent 60%),radial-gradient(900px 500px at -10% 30%,rgba(255,180,84,.06),transparent 60%),linear-gradient(rgba(79,209,197,.03) 1px,transparent 1px) 0 0/100% 32px,var(--bg)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--bg2)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.num{font-family:var(--f-display);font-variant-numeric:tabular-nums}
+h1,h2,h3,h4{font-family:var(--f-display);text-wrap:balance;margin:0;font-weight:600}
+.wrap{max-width:1360px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:rgba(10,26,36,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:18px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--fg)}
+.brand svg{width:42px;height:42px;flex:none}
+.brand b{font-family:var(--f-display);font-size:22px;font-weight:700;display:block;line-height:1.1}
+.brand small{display:block;color:var(--mute);font-size:12px;line-height:1.3}
+.tabs{display:flex;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:4px;margin-inline-start:auto;overflow-x:auto;max-width:100%}
+.tabs a{white-space:nowrap;text-decoration:none;color:var(--mute);padding:7px 16px;border-radius:999px;font-family:var(--f-display);font-size:14px;transition:.2s}
+.tabs a:hover{color:var(--fg)}
+.tabs a[aria-current="page"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute)}
+.who .role{border:1px solid var(--line2);border-radius:999px;padding:3px 10px;color:var(--fg)}
+.who .role.admin{border-color:rgba(199,146,255,.5);color:var(--r3)}
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--unk)}
+.sync.live i{background:var(--ok);animation:ping 2s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(61,220,151,.55)}70%{box-shadow:0 0 0 8px rgba(61,220,151,0)}100%{box-shadow:0 0 0 0 rgba(61,220,151,0)}}
+
+main{padding-block:26px 40px}
+.view{display:flex;flex-direction:column;gap:22px}
+.headline{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.headline h1{font-size:clamp(24px,3.2vw,36px);line-height:1.25}
+.headline p{margin:6px 0 0;color:var(--mute);max-width:66ch}
+.eyebrow{font-size:12px;letter-spacing:.12em;color:var(--accent);font-family:var(--f-display);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.eyebrow::before{content:"";width:22px;height:2px;background:var(--accent);border-radius:2px}
+
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.kpi{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden;min-width:0}
+.kpi .l{color:var(--mute);font-size:13px}
+.kpi .v{font-family:var(--f-display);font-size:28px;font-weight:600;line-height:1.25;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:var(--dim)}
+.kpi .bar{position:absolute;inset:auto 0 0 0;height:3px;background:var(--c,var(--accent));opacity:.8}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;min-width:0}
+.panel h3{font-size:16px;margin-bottom:4px}
+.panel .sub{color:var(--mute);font-size:13px;margin:0 0 12px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sec-h h2{font-size:22px}
+.sec-h p{margin:0;color:var(--mute);font-size:13px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+
+/* regions */
+.reg{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;border-top:3px solid var(--c)}
+.reg .rh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.reg .rh h3{font-size:18px}
+.reg .rh span{color:var(--mute);font-size:12.5px}
+.reg .rn{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.reg .rn div{background:var(--bg2);border-radius:10px;padding:6px 8px}
+.reg .rn b{display:block;font-family:var(--f-display);font-size:17px;font-variant-numeric:tabular-nums}
+.reg .rn span{font-size:11px;color:var(--mute)}
+.share{display:flex;flex-direction:column;gap:6px}
+.share button{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;background:none;border:0;padding:4px 0;cursor:pointer;text-align:start;font-size:13px}
+.share button:hover .sn{color:var(--fg)}
+.share .sn{color:var(--mute)}
+.share .sv{font-family:var(--f-display);font-variant-numeric:tabular-nums}
+.share .st{grid-column:1/-1;height:6px;border-radius:4px;background:var(--line);overflow:hidden}
+.share .st i{display:block;height:100%;background:var(--c)}
+
+/* clinic grid */
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.hcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;transition:transform .25s,border-color .25s}
+.hcard:hover{transform:translateY(-3px);border-color:var(--line2)}
+.hcard .t1{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
+.hcard h4{font-size:16px;line-height:1.4}
+.meta{font-size:12px;color:var(--mute)}
+.rtag{flex:none;font-size:11.5px;border-radius:999px;padding:2px 9px;border:1px solid var(--c);color:var(--c);font-family:var(--f-display)}
+.hnums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.hnums div{background:var(--bg2);border-radius:10px;padding:6px 8px;min-width:0}
+.hnums b{display:block;font-family:var(--f-display);font-size:16px;font-variant-numeric:tabular-nums}
+.hnums span{font-size:11px;color:var(--mute)}
+.big{display:flex;align-items:baseline;gap:8px}
+.big b{font-family:var(--f-display);font-size:26px;font-variant-numeric:tabular-nums}
+.big span{color:var(--mute);font-size:12.5px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;border-radius:999px;padding:2px 9px;border:1px solid var(--line2);color:var(--mute)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.ok{color:var(--ok);border-color:rgba(61,220,151,.35)}
+.pill.mid{color:var(--warn);border-color:rgba(255,195,90,.35)}
+.pill.old{color:var(--bad);border-color:rgba(255,107,91,.35)}
+.pill.none{color:var(--unk)}
+.acts{display:flex;gap:8px;margin-top:auto;flex-wrap:wrap}
+.btn{border:1px solid var(--line2);background:var(--bg2);border-radius:10px;padding:8px 14px;cursor:pointer;font-size:13.5px;font-family:var(--f-display);transition:.2s;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.danger{color:var(--bad);border-color:rgba(255,107,91,.4)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:6px 10px;font-size:12.5px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* bar charts */
+.keys{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--mute);margin-bottom:12px}
+.keys span{display:inline-flex;align-items:center;gap:6px}
+.keys i{width:10px;height:10px;border-radius:3px}
+.bars{display:flex;flex-direction:column;gap:9px}
+.brow{display:grid;grid-template-columns:96px minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:13px}
+.brow .bn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mute)}
+.brow .bt{height:16px;border-radius:4px;background:rgba(255,255,255,.03);overflow:hidden}
+.brow .bt i{display:block;height:100%;border-radius:4px;transform-origin:right;animation:grow .9s cubic-bezier(.2,.8,.2,1) both}
+@keyframes grow{from{transform:scaleX(0)}}
+.brow .bv{font-family:var(--f-display);font-variant-numeric:tabular-nums;text-align:left}
+.axis{display:grid;grid-template-columns:96px minmax(0,1fr) 64px;gap:10px;font-size:11px;color:var(--dim)}
+.axis .ticks{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:4px}
+.dual .bt{display:flex;flex-direction:column;gap:3px;height:auto;background:none}
+.dual .bt i{height:8px}
+
+/* tables */
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:separate;border-spacing:3px;width:100%;font-size:12px;min-width:620px}
+.tbl th{font-weight:500;color:var(--mute);text-align:center;font-size:11.5px;padding:3px;white-space:nowrap}
+.tbl th.rn{text-align:right;color:var(--fg);font-size:12px}
+.tbl td{text-align:center;border-radius:6px;padding:6px 2px;font-family:var(--f-display);font-variant-numeric:tabular-nums}
+.tbl td.z{color:var(--dim);background:rgba(255,255,255,.025)}
+.tbl td.y{background:rgba(61,220,151,.16);color:var(--ok)}
+.tbl td.n{background:rgba(255,107,91,.08);color:#b56a62}
+
+.log{display:flex;flex-direction:column;gap:2px;max-height:340px;overflow:auto}
+.lrow{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:10px;padding:9px 4px;border-bottom:1px dashed var(--line);font-size:13px;align-items:start}
+.lrow i{width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:7px}
+.lrow small{color:var(--dim);display:block}
+.lrow time{color:var(--mute);font-size:12px;white-space:nowrap}
+.empty{padding:22px;border:1px dashed var(--line2);border-radius:14px;color:var(--mute);text-align:center;font-size:14px}
+
+.tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.tool{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.tool h4{font-size:15px}
+.tool p{margin:0;font-size:12.5px;color:var(--mute)}
+.field{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--mute);min-width:0}
+.inp{background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;font-size:14px;width:100%;color:var(--fg);min-width:0}
+.inp:focus{border-color:var(--accent);outline:none}
+textarea.inp{resize:vertical;min-height:38px;line-height:1.5}
+.msg{font-size:12.5px;min-height:1.2em}
+.msg.ok{color:var(--ok)} .msg.err{color:var(--bad)}
+
+/* ===== ID card ===== */
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px}
+.chip{flex:none;border:1px solid var(--line2);background:var(--bg2);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--mute);transition:.2s}
+.chip:hover{color:var(--fg);border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:rgba(79,209,197,.14);border-color:var(--accent);color:var(--fg)}
+.cardhero{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:22px;align-items:start}
+.idc{position:relative;aspect-ratio:1.586;max-width:100%;border-radius:22px;padding:22px 24px;overflow:hidden;color:#eaf7f6;
+  background:linear-gradient(135deg,#0f3a3f 0%,#0d2a38 45%,#151f3a 100%);border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 30px 60px -20px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.12);display:flex;flex-direction:column;gap:8px;transform:perspective(1200px) rotateX(4deg) rotateY(-6deg);transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.idc:hover{transform:perspective(1200px) rotateX(0) rotateY(0)}
+.idc::before{content:"";position:absolute;inset:0;background:radial-gradient(420px 220px at 15% 0%,rgba(79,209,197,.25),transparent 70%),repeating-linear-gradient(115deg,rgba(255,255,255,.025) 0 2px,transparent 2px 9px);pointer-events:none}
+.idc::after{content:"";position:absolute;top:0;bottom:0;right:0;width:8px;background:var(--c)}
+.idc > *{position:relative}
+.idc .ih{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.idc .org{font-size:11.5px;letter-spacing:.06em;color:rgba(234,247,246,.7);line-height:1.5}
+.idc .org b{display:block;font-family:var(--f-display);font-size:13px;color:#fff;letter-spacing:0}
+.idc .emb{width:48px;height:48px;flex:none}
+.idc .nm{font-family:var(--f-display);font-size:clamp(20px,3.4vw,28px);font-weight:700;line-height:1.25;margin-top:4px}
+.idc .tp{font-size:12.5px;color:rgba(234,247,246,.75)}
+.idc .chipm{width:44px;height:32px;border-radius:7px;background:linear-gradient(135deg,#e8c77a,#a8823a);position:relative;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.idc .chipm::before{content:"";position:absolute;inset:7px 12px;border:1px solid rgba(0,0,0,.35);border-radius:3px}
+.idc .st{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:auto}
+.idc .st div{min-width:0}
+.idc .st b{display:block;font-family:var(--f-display);font-size:clamp(14px,2.3vw,19px);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idc .st span{font-size:10.5px;color:rgba(234,247,246,.65)}
+.idc .ft{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;font-size:11px;color:rgba(234,247,246,.7)}
+.idc .bc{height:26px;display:flex;gap:1.5px;align-items:stretch;direction:ltr}
+.idc .bc i{background:rgba(234,247,246,.85);display:block}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.fact{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.fact span{display:block;font-size:12px;color:var(--mute)}
+.fact b{font-family:var(--f-display);font-weight:500;font-size:14px;overflow-wrap:anywhere}
+.fact.w{grid-column:1/-1}
+
+.secgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.kv{display:flex;flex-direction:column}
+.kv div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:12px;padding:7px 2px;border-bottom:1px dashed var(--line);font-size:13px}
+.kv div:last-child{border-bottom:0}
+.kv dt,.kv .k{color:var(--mute);overflow-wrap:anywhere}
+.kv .v{overflow-wrap:anywhere}
+.kv .neg{color:var(--dim)}
+.kv .sh{display:block;grid-template-columns:none;color:var(--accent);font-family:var(--f-display);font-size:12.5px;padding-top:12px;border-bottom:0}
+.stf{width:100%;border-collapse:collapse;font-size:13px}
+.stf th{color:var(--mute);font-weight:500;font-size:12px;text-align:center;padding:6px 4px;border-bottom:1px solid var(--line)}
+.stf th:first-child,.stf td:first-child{text-align:right}
+.stf td{padding:7px 4px;border-bottom:1px dashed var(--line);text-align:center;font-family:var(--f-display);font-variant-numeric:tabular-nums}
+.stf td:first-child{font-family:var(--f-body)}
+.spl{display:flex;flex-wrap:wrap;gap:6px}
+.spl span{background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px}
+.spl span b{font-family:var(--f-display);color:var(--accent);margin-inline-start:4px}
+.spl span.off{color:var(--dim);border-style:dashed}
+
+/* portal */
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.pick button{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:start;cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:.2s;border-top:3px solid var(--c)}
+.pick button:hover{border-color:var(--accent);transform:translateY(-2px)}
+.pick b{font-family:var(--f-display);font-size:15.5px}
+.pick small{color:var(--mute)}
+.gate{max-width:420px;margin:30px auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px;display:flex;flex-direction:column;gap:14px;text-align:center}
+.gate .pin{font-size:28px;letter-spacing:.5em;text-align:center;font-family:var(--f-display)}
+.ptabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.ptabs button{flex:none;background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;color:var(--mute);font-family:var(--f-display);font-size:14px}
+.ptabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.fgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fgrid .w{grid-column:1/-1}
+.erows{display:flex;flex-direction:column;gap:6px}
+.er{display:grid;gap:6px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:6px}
+.er.hdr{background:none;border:0;padding:0 6px;font-size:11.5px;color:var(--dim)}
+.er.staff{grid-template-columns:minmax(0,1.6fr) repeat(5,minmax(0,.7fr)) 30px}
+.er.spec{grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(0,.7fr)) 30px}
+.er.kvr{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) 30px}
+.er .inp{padding:6px 8px;font-size:13px}
+.er .inp.n{text-align:center;font-family:var(--f-display)}
+.del{border:0;background:none;color:var(--dim);cursor:pointer;font-size:18px}
+.del:hover{color:var(--bad)}
+.savebar{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:rgba(14,33,45,.96);backdrop-filter:blur(10px);border:1px solid var(--line2);border-radius:14px;padding:10px 14px}
+.savebar .msg{flex:1}
+
+/* signature */
+.sign{border-top:1px solid var(--line);margin-top:20px;background:linear-gradient(180deg,transparent,rgba(79,209,197,.04))}
+.sign .wrap{padding-block:30px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.sign .by{display:flex;flex-direction:column;gap:2px}
+.sign .by span{font-size:12px;color:var(--mute);letter-spacing:.08em}
+.sign .by b{font-family:var(--f-sign);font-weight:700;font-size:clamp(28px,4vw,40px);line-height:1.3;background:linear-gradient(90deg,var(--accent),var(--r2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sign small{color:var(--dim);font-size:12px}
+.sign svg{width:200px;height:40px}
+.sign .pulse path{stroke-dasharray:420;stroke-dashoffset:420;animation:draw 3.2s ease-in-out infinite}
+@keyframes draw{0%{stroke-dashoffset:420}55%{stroke-dashoffset:0}100%{stroke-dashoffset:-420}}
+
+#splash{position:fixed;inset:0;z-index:100;background:radial-gradient(800px 500px at 50% 40%,#0d2f38,#050e14);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;transition:opacity .7s,visibility .7s;cursor:pointer;padding:16px}
+#splash.gone{opacity:0;visibility:hidden}
+#splash .mini{width:min(300px,70vw);aspect-ratio:1.586;border-radius:18px;background:linear-gradient(135deg,#0f3a3f,#151f3a);border:1px solid rgba(255,255,255,.15);box-shadow:0 30px 60px -20px #000;opacity:0;transform:translateY(20px) rotateX(30deg);animation:card 1.1s .15s cubic-bezier(.2,.8,.2,1) forwards;position:relative;overflow:hidden}
+#splash .mini::before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.18) 50%,transparent 70%);transform:translateX(100%);animation:shine 1.4s .9s forwards}
+#splash .mini i{position:absolute;top:22px;right:22px;width:44px;height:32px;border-radius:7px;background:linear-gradient(135deg,#e8c77a,#a8823a)}
+#splash .mini u{position:absolute;bottom:22px;right:22px;left:22px;height:8px;border-radius:4px;background:rgba(79,209,197,.6);text-decoration:none}
+#splash .mini s{position:absolute;bottom:40px;right:22px;width:55%;height:8px;border-radius:4px;background:rgba(255,255,255,.35)}
+@keyframes card{to{opacity:1;transform:none}}
+@keyframes shine{to{transform:translateX(-100%)}}
+#splash .t1{font-family:var(--f-display);font-size:clamp(36px,7vw,64px);font-weight:700;opacity:0;transform:translateY(14px);animation:rise .8s 1.1s forwards}
+#splash .t2{color:var(--mute);opacity:0;animation:rise .8s 1.4s forwards;text-align:center}
+#splash .t3{font-family:var(--f-sign);font-size:clamp(22px,3.4vw,30px);opacity:0;animation:rise .9s 1.8s forwards;text-align:center}
+#splash .t3 em{font-style:normal;color:var(--dim);font-family:var(--f-body);font-size:13px;display:block;letter-spacing:.1em}
+#splash .skip{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom,0px));font-size:12px;color:var(--dim)}
+@keyframes rise{to{opacity:1;transform:none}}
+
+.modal{position:fixed;inset:0;z-index:90;background:rgba(3,9,13,.7);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal .box{background:var(--panel);border:1px solid var(--line2);border-radius:20px;max-width:620px;width:100%;padding:24px;max-height:86vh;overflow:auto}
+.modal h3{font-size:22px;margin-bottom:8px}
+.modal ul{padding-inline-start:20px;color:var(--mute);font-size:14px}
+
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.two,.three,.cardhero,.secgrid,.tools{grid-template-columns:minmax(0,1fr)}.fgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi .v{font-size:22px}
+  .tabs{margin-inline-start:0;width:100%}.brand small{display:none}
+  .idc{padding:16px 18px;border-radius:16px;transform:none;aspect-ratio:auto;min-height:220px}
+  .idc .st{margin-top:10px}
+  .idc .st span{font-size:9.5px}
+  .fgrid{grid-template-columns:minmax(0,1fr)}
+  .er.staff{grid-template-columns:repeat(5,minmax(0,1fr)) 30px}.er.staff .inp:first-child{grid-column:1/-1}
+  .er.spec{grid-template-columns:repeat(3,minmax(0,1fr)) 30px}.er.spec .inp:first-child{grid-column:1/-1}
+  .er.kvr{grid-template-columns:minmax(0,1fr) 30px}.er.kvr textarea{grid-column:1/2}
+  .er.hdr{display:none}
+  .kv div{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
+
+/* ===== 3D stage ===== */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:stretch}
+.stage-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.stage-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;justify-content:space-between}
+.stage-head h3{font-size:15px}
+.slot{position:relative;min-height:480px;flex:1}
+#stage{position:absolute;inset:0;background:#06111a;overflow:hidden}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#stage canvas:active{cursor:grabbing}
+.hud{position:absolute;top:12px;right:12px;pointer-events:none;display:flex;flex-direction:column;gap:4px;max-width:70%}
+.hud .hn{font-family:var(--f-display);font-weight:600;font-size:18px;text-shadow:0 2px 12px #000}
+.hud .hs{font-size:12px;color:var(--mute);text-shadow:0 1px 6px #000}
+.legend{position:absolute;bottom:10px;right:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none;font-size:11.5px;color:var(--mute)}
+.legend span{display:inline-flex;align-items:center;gap:6px;background:rgba(6,17,26,.75);padding:3px 9px;border-radius:999px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.stage-ctrl{position:absolute;top:12px;left:12px;display:flex;gap:6px;flex-wrap:wrap}
+.ibtn{background:rgba(10,26,36,.85);border:1px solid var(--line2);border-radius:10px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--fg);display:inline-flex;align-items:center;gap:6px}
+.ibtn:hover{border-color:var(--accent)}
+.nogl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mute);padding:20px;text-align:center}
+#tip{position:fixed;z-index:80;pointer-events:none;background:rgba(8,20,28,.95);border:1px solid var(--line2);border-radius:10px;padding:7px 11px;font-size:12.5px;line-height:1.5;transform:translate(-50%,-115%);max-width:280px}
+#tip b{font-family:var(--f-display)}
+.dlist{display:flex;flex-direction:column;gap:6px;max-height:520px;overflow:auto}
+.drow{display:grid;grid-template-columns:4px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--bg2);border:1px solid transparent;cursor:pointer;text-align:start;width:100%}
+.drow:hover,.drow.on{border-color:var(--accent)}
+.drow .c{height:28px;border-radius:3px}
+.drow .n{font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drow .n small{display:block;color:var(--dim);font-size:11.5px}
+.drow .q{font-family:var(--f-display);font-size:14px;font-variant-numeric:tabular-nums}
+/* ===== motion ===== */
+.rv{animation:rv .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*60ms)}
+@keyframes rv{from{opacity:.001;transform:translateY(14px)}}
+.idc{will-change:transform}
+.idc .shine{position:absolute;inset:0;background:radial-gradient(260px 160px at var(--mx,30%) var(--my,20%),rgba(255,255,255,.16),transparent 70%);pointer-events:none;z-index:1}
+.idc.sweep::before{animation:sweep 1.2s ease-out}
+@keyframes sweep{from{background-position:0 0,-400px 0}to{background-position:0 0,0 0}}
+.tbl td{animation:pop .5s both;animation-delay:calc(var(--d,0)*12ms)}
+@keyframes pop{from{opacity:0;transform:scale(.6)}}
+#splash svg.ecg{width:min(520px,86vw);height:90px}
+#splash .ecg path{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1200;stroke-dashoffset:1200;animation:ecg 1.6s .3s cubic-bezier(.6,0,.3,1) forwards;filter:drop-shadow(0 0 8px rgba(79,209,197,.8))}
+@keyframes ecg{to{stroke-dashoffset:0}}
+.who .btn.sm{padding:5px 10px}
+@media (max-width:1100px){.hero{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){.slot{min-height:380px}}
+@media (prefers-reduced-motion:reduce){.rv,.tbl td{animation:none}}
+</style>
+</head>
+<body>
+
+<div id="splash" role="presentation">
+  <div class="mini"><i></i><s></s><u></u></div>
+  <svg class="ecg" viewBox="0 0 520 90" aria-hidden="true"><path d="M0 52 H140 l12 -7 l11 7 H190 l9 16 l15 -64 l16 82 l12 -32 H280 l12 -10 l14 10 H340 v-18 h100 v18 H520"/></svg>
+  <div class="t1">نبض العيادات</div>
+  <div class="t2">منظومة كروت تعريف عيادات التأمين الصحي · فرع المنيا</div>
+  <div class="t3"><em>فكرة وتصميم وتطوير</em>د. سامح ماجد صابر</div>
+  <div class="skip">اضغط للدخول</div>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#dashboard" aria-label="نبض العيادات">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <rect x="1" y="1" width="46" height="46" rx="13" fill="#0f2b38" stroke="#2a5266"/>
+        <rect x="9" y="14" width="30" height="21" rx="4" fill="none" stroke="#e7f2f5" stroke-width="2.2"/>
+        <rect x="13" y="19" width="7" height="5" rx="1.2" fill="#e8c77a"/>
+        <path d="M13 30 h4 l2-3 l2 5 l2-2 h12" fill="none" stroke="#4fd1c5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span><b>نبض العيادات</b><small>كروت تعريف عيادات التأمين الصحي · المنيا</small></span>
+    </a>
+    <nav class="tabs" id="tabs" aria-label="أقسام المنظومة">
+      <a href="#dashboard" data-v="dashboard">لوحة الإدارة</a>
+      <a href="#card" data-v="card">كارت العيادة 3D</a>
+      <a href="#portal" data-v="portal">بوابة العيادات</a>
+    </nav>
+    <div class="who" id="who"><span class="sync" id="sync"><i></i>جارٍ الاتصال</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- DASHBOARD -->
+  <section class="view" id="v-dashboard" aria-label="لوحة الإدارة">
+    <div class="headline">
+      <div>
+        <div class="eyebrow">غرفة المتابعة المركزية</div>
+        <h1>عيادات التأمين الصحي بفرع المنيا</h1>
+        <p>كل عيادة تحدّث كارت التعريف بتاعها من البوابة، والإدارة تشوف الفرع كله في مكان واحد: المربوطين، التردد، القوى البشرية، التخصصات والخدمات، ومين حدّث إمتى.</p>
+      </div>
+      <button class="btn" id="aboutBtn" type="button">عن المنظومة</button>
+    </div>
+    <div class="kpis" id="kpis"></div>
+
+    <div class="hero">
+      <div class="stage-card">
+        <div class="stage-head"><h3>خريطة الفرع ثلاثية الأبعاد</h3><span class="meta">ارتفاع كل مبنى = التردد الشهري · النقط المتحركة = المترددين</span></div>
+        <div class="slot" id="slot-dash"></div>
+      </div>
+      <aside class="panel">
+        <h3>العيادات حسب التردد</h3>
+        <p class="sub">اضغط على عيادة لتنتقل الكاميرا لمبناها</p>
+        <div class="dlist" id="dash-list"></div>
+      </aside>
+    </div>
+
+    <div class="sec-h"><h2>المناطق الطبية</h2><p>حصة كل عيادة من التردد الشهري داخل منطقتها</p></div>
+    <div class="three" id="regions"></div>
+
+    <div class="sec-h"><h2>العيادات</h2><p id="hg-sub"></p></div>
+    <div class="hgrid" id="hgrid"></div>
+
+    <div class="two">
+      <div class="panel">
+        <h3>التردد الشهري لكل عيادة</h3>
+        <p class="sub">عدد المترددين في الشهر كما ورد في الكارت</p>
+        <div class="keys" id="reg-keys"></div>
+        <div class="bars" id="bars-freq"></div>
+      </div>
+      <div class="panel">
+        <h3>ضغط العمل على الفريق</h3>
+        <p class="sub">التردد الشهري مقسوم على عدد الأطباء وعلى عدد التمريض</p>
+        <div class="keys"><span><i style="background:var(--accent)"></i>مريض/طبيب</span><span><i style="background:var(--r2)"></i>مريض/تمريض</span></div>
+        <div class="bars dual" id="bars-load"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>خريطة التخصصات</h3>
+      <p class="sub">عدد عيادات الكشف في كل تخصص بكل عيادة · الخانة الفاضية معناها إن التخصص مش موجود أو ما اتذكرش</p>
+      <div class="tbl" id="heat"></div>
+    </div>
+
+    <div class="two">
+      <div class="panel">
+        <h3>الخدمات والبنية التحتية</h3>
+        <p class="sub">متاح ✓ أو غير متاح ✗ حسب ما ورد في كارت كل عيادة</p>
+        <div class="tbl" id="svc"></div>
+      </div>
+      <div class="panel">
+        <h3>سجل التحديثات</h3>
+        <p class="sub">آخر ما أرسلته العيادات</p>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="tools-panel" hidden>
+      <h3>أدوات مدير النظام</h3>
+      <p class="sub">حسابات العيادات والمديرين، إضافة عيادة، والتصدير</p>
+      <div class="tools" id="tools"></div>
+    </div>
+  </section>
+
+  <!-- CARD -->
+  <section class="view" id="v-card" hidden aria-label="كارت العيادة">
+    <div class="headline">
+      <div>
+        <div class="eyebrow">كارت تعريف العيادة</div>
+        <h1 id="card-title">كارت العيادة</h1>
+        <p id="card-sub"></p>
+      </div>
+      <button class="btn" type="button" id="cardEdit" hidden>تحديث بيانات العيادة</button>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="اختر العيادة"></div>
+    <div id="cardtop"></div>
+    <div class="stage-card">
+      <div class="stage-head"><h3 id="bld-title">المبنى الافتراضي</h3><span class="meta">كل دور مفصول لوحده · كل غرفة ملوّنة بنوعها كما ورد في الكارت</span></div>
+      <div class="hero" style="grid-template-columns:minmax(0,1fr) 300px;gap:0">
+        <div class="slot" id="slot-card" style="min-height:min(70vh,640px)"></div>
+        <aside class="panel" style="border-radius:0;border-width:0 1px 0 0">
+          <h3>الأدوار</h3><p class="sub" id="fl-sub"></p>
+          <div class="dlist" id="fl-list"></div>
+        </aside>
+      </div>
+    </div>
+    <div id="cardbody"></div>
+  </section>
+
+  <!-- PORTAL -->
+  <section class="view" id="v-portal" hidden aria-label="بوابة العيادات">
+    <div id="portal"></div>
+  </section>
+</main>
+
+<footer class="sign">
+  <div class="wrap">
+    <div class="by"><span>فكرة وتصميم وتطوير</span><b>د. سامح ماجد صابر</b><small>منظومة «نبض العيادات» · بيانات كروت تعريف العيادات المقدَّمة · ٢٠٢٦</small></div>
+    <svg class="pulse" viewBox="0 0 200 40" aria-hidden="true"><path d="M0 22 H60 l6 -4 l6 4 H90 l5 8 l8 -28 l9 34 l7 -14 H140 l6 -5 l7 5 H200" fill="none" stroke="#4fd1c5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+</footer>
+
+<div class="modal" id="login" hidden role="dialog" aria-modal="true" aria-labelledby="l-h" style="z-index:95;background:radial-gradient(800px 500px at 50% 30%,#0d2f38,#050e14)">
+  <form class="box" id="lForm" style="max-width:420px;display:flex;flex-direction:column;gap:12px">
+    <div class="eyebrow">دخول المنظومة</div>
+    <h3 id="l-h" style="margin:0">نبض العيادات</h3>
+    <p style="color:var(--mute);margin:0;font-size:13.5px">العرض متاح لأي حد معاه اللينك. الدخول للمدير وللعيادات عشان التحديث بس.</p>
+    <label class="field" for="lEmail">اسم المستخدم أو الإيميل<input class="inp" id="lEmail" type="text" dir="ltr" autocomplete="username" autocapitalize="off" required></label>
+    <label class="field" for="lPass">كلمة السر<input class="inp" id="lPass" type="password" dir="ltr" autocomplete="current-password" required></label>
+    <div class="msg" id="lMsg" aria-live="polite"></div>
+    <button class="btn pri" id="lBtn" type="submit">دخول</button>
+    <div class="row" style="align-items:center;gap:10px;color:var(--dim);font-size:12px"><span style="flex:1;height:1px;background:var(--line)"></span>أو<span style="flex:1;height:1px;background:var(--line)"></span></div>
+    <button class="btn" id="gBtn" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>الدخول بحساب جوجل</button>
+    <div class="row" style="justify-content:space-between"><button class="btn sm" type="button" id="lReset">نسيت كلمة السر</button><button class="btn sm" type="button" id="lClose">رجوع للعرض</button></div>
+    <p style="font-family:var(--f-sign);font-size:20px;margin:6px 0 0;text-align:center;color:var(--mute)">تصميم وتطوير د. سامح ماجد صابر</p>
+  </form>
+</div>
+
+<div id="tip" hidden></div>
+<div id="park" hidden></div>
+<div class="modal" id="about" hidden role="dialog" aria-modal="true" aria-labelledby="about-h">
+  <div class="box">
+    <h3 id="about-h">عن «نبض العيادات»</h3>
+    <p style="color:var(--mute);margin-top:0">منظومة تفاعلية لكروت تعريف عيادات التأمين الصحي بفرع المنيا، مبنية من الكروت اللي قدمتها العيادات، وهي النسخة الشقيقة لمنظومة «نبض الأسرّة».</p>
+    <ul>
+      <li>بوابة لكل عيادة تدخلها بحساب خاص بيها، وتحدّث منها الكارت كله: البيانات الأساسية، التردد، القوى البشرية، التخصصات، والخدمات.</li>
+      <li>خريطة ثلاثية الأبعاد للفرع: مبنى لكل عيادة ارتفاعه حسب التردد، والمترددين ماشيين ناحيته.</li>
+      <li>مبنى افتراضي لكل عيادة بأدواره وغرفه، ملوّن بنوع كل غرفة كما ورد في الكارت.</li>
+      <li>لوحة إدارة لحظية، ومقارنات للتردد وضغط العمل، وخريطة للتخصصات والخدمات، وتصدير لملف Excel.</li>
+    </ul>
+    <p style="color:var(--mute);font-size:13px">المصدر: ملف كروت تعريف العيادات المجمّع (سبتمبر ٢٠٢٦). الأرقام القومية وأرقام الموبايل الشخصية للعاملين اتشالت من المنظومة للحفاظ على خصوصيتهم.</p>
+    <p style="font-family:var(--f-sign);font-size:26px;margin:10px 0 0">د. سامح ماجد صابر</p>
+    <div class="row" style="justify-content:flex-end"><button class="btn pri" type="button" id="aboutClose">تمام</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="../config.js"></script>
+<script src="seed.js"></script>
+<script>
+(function(){
+"use strict";
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>n==null||n===''||isNaN(n)?'—':Number(n).toLocaleString('en-US');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const REGC={'المنطقة 1':'#62b6ff','المنطقة 2':'#ffb454','المنطقة 3':'#c792ff'};
+const REGS=['المنطقة 1','المنطقة 2','المنطقة 3'];
+const rc=r=>REGC[r]||'#8aa3b0';
+const int=v=>{if(v==null||v==='')return null;if(typeof v==='number')return v;const m=String(v).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).match(/\d+/);return m?+m[0]:null};
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function rel(iso){if(!iso)return null;const m=(Date.now()-Date.parse(iso))/6e4;if(m<1)return 'الآن';if(m<60)return `منذ ${Math.round(m)} دقيقة`;const h=m/60;if(h<24)return `منذ ${Math.round(h)} ساعة`;const d=h/24;if(d<30)return `منذ ${Math.round(d)} يوم`;return new Date(iso).toLocaleDateString('ar-EG')}
+function fresh(c){if(!c.updatedAt)return {c:'none',t:'من الكارت الأصلي · لم يُحدَّث بعد'};const d=(Date.now()-Date.parse(c.updatedAt))/864e5;if(d<1)return {c:'ok',t:'محدّث '+rel(c.updatedAt)};if(d<30)return {c:'mid',t:'آخر تحديث '+rel(c.updatedAt)};return {c:'old',t:'يحتاج تحديث · '+rel(c.updatedAt)}}
+const short=c=>c.short||String(c.name||'').replace(/^عياد[ةه]\s*/,'');
+const toEmail=v=>{v=String(v||'').trim().toLowerCase();return v.includes('@')?v:v.replace(/[^a-z0-9._-]/g,'')+'@nabd-minia.app'};
+const showUser=e=>String(e||'').endsWith('@nabd-minia.app')?e.split('@')[0]:e;
+
+/* ---------- specialties & services ---------- */
+const normA=s=>String(s||'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/\s+/g,'').replace(/^ال/,'');
+const SPEC=[['ممارس',/^ممارس/],['باطنة',/^باطن/],['أطفال',/^اطفال$/],['قلب',/^قلب/],['عظام',/^عظام/],['أنف وأذن',/^انف/],['رمد',/^رمد/],['جلدية',/^جلدي/],['مسالك بولية',/^مسالك/],['غدد صماء',/^غدد/],['كبد',/^كبد/],['كلى',/^كلي$/],['زرع كلى',/^زرعال?كلي/],['أوعية دموية',/^اوعيه/],['مخ وأعصاب',/^مخوال?اعصاب$/],['مخ وأعصاب أطفال',/^مخوال?اعصاباطفال/],['سمعيات',/^سمعيات/],['أسنان',/^اسنان/],['صدر',/^صدر/],['نساء',/^نسا/],['جراحة',/^جراح/],['روماتيزم',/^روماتي?(زم|ود)/],['نفسية وعصبية',/^(نفسي|مركزالنفسي)/],['علاج طبيعي',/^علاجالطبيعي|^علاجطبيعي/],['تخاطب',/^تخاطب/],['درن',/^درن/]];
+function specKey(n){const a=normA(n);for(const [lbl,re] of SPEC)if(re.test(a))return lbl;return String(n||'').trim()}
+const NEG=/^(لا|لايوجد|لايوحد|لايجد|0|-|—|غير|معطل|تم نقل|يحول|×)/;
+const SVC=[['معمل تحاليل',/معمل\s*كيمياء/],['أشعة عادية',/اشع[هة]\s*عادي/],['أشعة مقطعية',/مقطعي/],['رسم قلب',/^رسم\s*القلب/],['سونار',/تليفزيوني|سونار/],['علاج طبيعي',/علاج\s*كهرب|علاج\s*طبيع[يى]\s*موجات/],['أسنان',/عدد\s*الكراس/],['مصاعد',/^المصاعد/],['مولد كهرباء',/^مولدات/],['كاميرات',/^كاميرات/],['غرفة تعقيم',/^غرف\s*التعقيم/]];
+function rowYes(rows,i){
+  let v=String(rows[i].v||'').trim();
+  if(!v||v==='العدد'){const n=rows[i+1];if(!n)return false;const t=(String(n.k||'')+' '+String(n.v||'')).trim();if(/^(خدمات|علاج|اشع|أشع|رسم|البصريات)/.test(n.k))return false;return t!==''&&!NEG.test(t.replace(/\s/g,''))&&!NEG.test(t)}
+  return !NEG.test(v)&&!NEG.test(v.replace(/\s/g,''));
+}
+function svcFlag(c,re){let seen=false;for(const s of (c.sections||[])){if(!['bld','svc'].includes(s.id))continue;const rows=s.rows||[];for(let i=0;i<rows.length;i++){if(re.test(String(rows[i].k||'').trim())){seen=true;if(rowYes(rows,i))return 'y'}}}return seen?'n':'z'}
+function staffNum(c,re){const r=(c.staff||[]).find(s=>re.test(normA(s.cat)));return r?int(r.total):null}
+function derive(c){const d=staffNum(c,/^اطباء(بشري)?$/),p=staffNum(c,/^صيدل/),n=staffNum(c,/^تمريض/);return {doctors:d??c.doctors,pharm:p??c.pharm,nurses:n??c.nurses}}
+const dailyNum=c=>{const t=String(c.daily||'');const all=(t.match(/\d+/g)||[]).map(Number);return all.length?all.reduce((a,b)=>a+b,0):Math.round((int(c.monthly)||0)/26)};
+
+/* ---------- floors & rooms from the card ---------- */
+const ROOMKW=/^(صيدل|عياد|معمل|مدير|رئيس|اخصائ|أخصائ|مسالك|اطفال|أطفال|باطن|علاج|متابع|ممارس|انف|أنف|ارشيف|أرشيف|خزين|اشع|أشع|تسجيل|مخزن|اسنان|أسنان|ادار|إدار|عظام|قلب|جلدي|رمد|نسا|سحب|حمام|استراح|شباك|صحة|صحه|خدمة|غرف|استعلام|سكرتار|جراح|سمعيات|تخاطب|غيار|مكتب)/;
+const HEADW=/^(عياد|غرف|علاج|اخصائ|أخصائ|رئيس|مدير|متابع|صحة|صحه|خدمة|شباك|مكتب|مخزن|استراح)/;
+function splitRooms(text){
+  let t=String(text||'').replace(/\s+/g,' ').trim();
+  if(!t||NEG.test(t.replace(/\s/g,''))||/^[-–—.\s0]*$/.test(t))return [];
+  t=t.replace(/^(يحتوي|يحتوى|يوجد|به|بيه)\s+(على\s+|علي\s+|به\s+)?/,'');
+  const chunks=t.split(/\s*(?:[-–—،,+\/|]|\s+و(?=\s*\S)|\s+\+\s*)\s*/).map(x=>x.trim()).filter(Boolean);
+  const out=[];
+  for(let ch of chunks){
+    ch=ch.replace(/^(و|عدد)\s*/,'').trim();if(!ch||/^\d+$/.test(ch))continue;
+    const w=ch.split(' ');const parts=[];let cur=[];
+    for(let i=0;i<w.length;i++){const x=w[i];
+      if(cur.length&&ROOMKW.test(x)&&!HEADW.test(cur[cur.length-1])&&!/^\d+$/.test(cur[cur.length-1])&&cur.length>=1&&w.length>3){parts.push(cur.join(' '));cur=[]}
+      cur.push(x)}
+    if(cur.length)parts.push(cur.join(' '));
+    for(let p of parts){const m=p.match(/^(\d+)\s*(.*)$/);let n=1;if(m&&m[2]){n=Math.min(8,+m[1]||1);p=m[2]}
+      for(let k=0;k<n;k++)out.push(p)}
+  }
+  return out.slice(0,40);
+}
+function floorsOf(c){
+  const b=(c.sections||[]).find(s=>s.id==='bld');const rows=b?b.rows:[];
+  const fl=rows.filter(r=>/^الدور/.test(String(r.k||'').trim())).map(r=>({name:String(r.k).trim().replace('الدور رابع','الدور الرابع').replace('الارضى','الأرضي'),rooms:splitRooms(r.v)}));
+  let last=-1;fl.forEach((f,i)=>{if(f.rooms.length)last=i});
+  const decl=int((rows.find(r=>/^عدد\s*الادوار/.test(r.k))||{}).v);
+  let n=Math.max(last+1,decl?Math.min(decl+(/ارض/.test((rows.find(r=>/^عدد\s*الادوار/.test(r.k))||{}).v||'')?1:0),11):0,1);
+  if(!fl.length)return Array.from({length:Math.max(1,decl||2)},(_,i)=>({name:i?'الدور '+(i):'الدور الأرضي',rooms:[]}));
+  return fl.slice(0,Math.min(n,fl.length));
+}
+const RT=[['كشف وعيادات','#4fd1c5',/(كشف|عياد|ممارس|باطن|اطفال|أطفال|قلب|عظام|نسا|جلدي|رمد|انف|أنف|مسالك|غدد|صدر|اسنان|أسنان|نفسي|تخاطب|سمع|جراح|روماتيزم|كبد|مخ)/],
+  ['صيدلية','#3ddc97',/صيدل/],['معمل وسحب','#c792ff',/(معمل|تحاليل|سحب|مختبر)/],['أشعة ورسم قلب','#ffb454',/(اشع|أشع|سونار|ايكو|رسم)/],['علاج طبيعي','#62b6ff',/علاج/],
+  ['إداري وخدمات','#8aa3b0',/(مدير|ادار|إدار|شئون|حساب|مخزن|احصاء|خزين|شباك|تسجيل|استعلام|سكرتار|ارشيف|أرشيف|متابع|خدمة|مكتب|رئيس|استراح|طوابع|شطب|صحة|صحه)/],['حمامات','#41525c',/(حمام|دورة|دورات)/]];
+const roomType=n=>{for(const t of RT)if(t[2].test(n))return t;return ['أخرى','#9be7ff']};
+
+/* ---------- state ---------- */
+const S={cl:[],log:[],sel:null,view:'dashboard',admin:false,signed:false,uid:null,email:'',myCid:null,loaded:false,dbOk:null,fromSeed:false,users:[],admins:[],portal:{hid:null,draft:null,dirty:false,tab:'basic'}};
+let fdb=null;
+const H=id=>S.cl.find(c=>c.id===id);
+
+/* ======================================================================
+   3D STAGE
+   ====================================================================== */
+const STG={ok:false,inited:false,objs:[],picks:[],movers:[],anims:[],targets:[],lastUser:0,tour:null,visible:true,mode:null,key:null};
+function stageHTML(){return `<div id="stage"><canvas aria-label="عرض ثلاثي الأبعاد"></canvas>
+  <div class="hud"><div class="hn" id="hud-n"></div><div class="hs" id="hud-s"></div></div>
+  <div class="stage-ctrl"><button class="ibtn" type="button" id="b-tour">▶ جولة</button><button class="ibtn" type="button" id="b-reset">⟲ عرض كامل</button></div>
+  <div class="legend" id="legend"></div></div>`}
+function mountStage(slotId){
+  const slot=document.getElementById(slotId);if(!slot)return;
+  let st=$('#stage');
+  if(!st){slot.insertAdjacentHTML('beforeend',stageHTML());st=$('#stage');$('#b-tour').onclick=()=>{STG.tour?stopTour():startTour()};$('#b-reset').onclick=()=>{stopTour();fitAll()};stageInit()}
+  else if(st.parentElement!==slot)slot.appendChild(st);
+  requestAnimationFrame(resizeStage);
+}
+let _v1,_v2;
+function stageInit(){
+  const cv=$('#stage canvas');
+  if(!window.THREE){noGL();return}
+  try{STG.r=new THREE.WebGLRenderer({canvas:cv,antialias:true,powerPreference:'high-performance'})}catch(e){noGL();return}
+  STG.ok=true;_v1=new THREE.Vector3();_v2=new THREE.Vector3();
+  const r=STG.r;r.setPixelRatio(Math.min(devicePixelRatio||1,2));r.setClearColor(0x06111a,1);r.outputEncoding=THREE.sRGBEncoding;
+  const sc=STG.scene=new THREE.Scene();sc.fog=new THREE.Fog(0x06111a,60,190);
+  STG.cam=new THREE.PerspectiveCamera(40,1,.1,600);
+  sc.add(new THREE.HemisphereLight(0xa8dcff,0x08141c,.55));
+  const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(-20,45,25);sc.add(dl);
+  const dl2=new THREE.DirectionalLight(0x4fd1c5,.35);dl2.position.set(25,14,-20);sc.add(dl2);
+  const g=new THREE.Mesh(new THREE.PlaneGeometry(800,800),new THREE.MeshStandardMaterial({color:0x040b10,roughness:1}));g.rotation.x=-Math.PI/2;g.position.y=-.02;sc.add(g);
+  const grid=new THREE.GridHelper(400,200,0x1d4a5c,0x0f2a38);grid.material.transparent=true;grid.material.opacity=.4;sc.add(grid);
+  const pg=new THREE.BufferGeometry(),N=280,pa=new Float32Array(N*3);
+  for(let i=0;i<N;i++){pa[i*3]=(Math.random()-.5)*140;pa[i*3+1]=Math.random()*34;pa[i*3+2]=(Math.random()-.5)*140}
+  pg.setAttribute('position',new THREE.BufferAttribute(pa,3));
+  STG.parts=new THREE.Points(pg,new THREE.PointsMaterial({color:0x4fd1c5,size:.15,transparent:true,opacity:.5,depthWrite:false}));sc.add(STG.parts);
+  const c2=document.createElement('canvas');c2.width=256;c2.height=4;const x2=c2.getContext('2d');const gr=x2.createLinearGradient(0,0,256,0);gr.addColorStop(0,'rgba(79,209,197,0)');gr.addColorStop(.85,'rgba(79,209,197,.55)');gr.addColorStop(1,'rgba(79,209,197,0)');x2.fillStyle=gr;x2.fillRect(0,0,256,4);
+  STG.scan=new THREE.Mesh(new THREE.PlaneGeometry(6,1),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c2),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));STG.scan.rotation.x=-Math.PI/2;STG.scan.position.y=.06;sc.add(STG.scan);
+  STG.world=new THREE.Group();sc.add(STG.world);
+  STG.G={box:new THREE.BoxGeometry(1,1,1),sph:new THREE.SphereGeometry(.5,12,8),plane:new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2)};
+  const hc=document.createElement('canvas');hc.width=hc.height=128;const hg=hc.getContext('2d');const rg=hg.createRadialGradient(64,64,4,64,64,64);rg.addColorStop(0,'rgba(255,255,255,1)');rg.addColorStop(.5,'rgba(255,255,255,.35)');rg.addColorStop(1,'rgba(255,255,255,0)');hg.fillStyle=rg;hg.fillRect(0,0,128,128);
+  STG.haloTex=new THREE.CanvasTexture(hc);
+  STG.mats={};
+  STG.O={th:-.75,ph:.95,r:70,tx:0,ty:0,tz:0};STG.Og={...STG.O};
+  STG.ray=new THREE.Raycaster();STG.mouse=new THREE.Vector2();
+  bindOrbit(cv);new ResizeObserver(resizeStage).observe($('#stage'));
+  document.addEventListener('visibilitychange',()=>{STG.visible=!document.hidden});
+  STG.clock=new THREE.Clock();loop();
+}
+function noGL(){STG.ok=false;$('#stage canvas').hidden=true;$('#stage').insertAdjacentHTML('beforeend','<div class="nogl">جهازك مش بيدعم العرض ثلاثي الأبعاد. باقي المنظومة شغالة عادي.</div>');['b-tour','b-reset'].forEach(i=>$('#'+i).hidden=true)}
+function resizeStage(){const st=$('#stage');if(!st||!STG.ok)return;const w=st.clientWidth,h=st.clientHeight;if(!w||!h)return;STG.r.setSize(w,h,false);STG.cam.aspect=w/h;STG.cam.updateProjectionMatrix()}
+function mat(color,opts){const k=color+JSON.stringify(opts||{});if(!STG.mats[k])STG.mats[k]=new THREE.MeshStandardMaterial(Object.assign({color,roughness:.6,metalness:.15},opts||{}));return STG.mats[k]}
+function add(o,own){if(own)o.userData.own=true;STG.world.add(o);STG.objs.push(o);return o}
+function boxAt(w,h,d,x,y,z,m){const b=new THREE.Mesh(STG.G.box,m);b.scale.set(w,h,d);b.position.set(x,y,z);return add(b)}
+function edgesAt(w,h,d,x,y,z,color,op){const e=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w,h,d)),new THREE.LineBasicMaterial({color,transparent:true,opacity:op==null?.8:op}));e.position.set(x,y,z);return add(e,true)}
+function clearWorld(){for(const o of STG.objs){STG.world.remove(o);if(o.userData.own){o.geometry&&o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose()}}}STG.objs=[];STG.picks=[];STG.movers=[];STG.anims=[];STG.targets=[]}
+function labelSprite(t1,t2,color){
+  const c=document.createElement('canvas');c.width=640;c.height=150;const g=c.getContext('2d');g.direction='rtl';
+  const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
+  g.fillStyle='rgba(7,19,27,.88)';rr(6,6,628,138,28);g.fill();g.lineWidth=4;g.strokeStyle=color;g.stroke();g.fillStyle=color;g.fillRect(596,30,8,90);
+  g.textAlign='right';g.fillStyle='#e7f2f5';g.font='600 46px "Readex Pro","IBM Plex Sans Arabic",sans-serif';g.fillText(t1.length>24?t1.slice(0,23)+'…':t1,576,68);
+  g.fillStyle='#93b2bf';g.font='400 34px "Readex Pro","IBM Plex Sans Arabic",sans-serif';g.fillText(t2.length>30?t2.slice(0,29)+'…':t2,576,118);
+  const tx=new THREE.CanvasTexture(c);tx.anisotropy=4;tx.encoding=THREE.sRGBEncoding;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false}));sp.userData.own=true;return sp;
+}
+function halo(x,z,w,d,color,op){const m=new THREE.Mesh(STG.G.plane,new THREE.MeshBasicMaterial({color,map:STG.haloTex,transparent:true,opacity:op||.35,blending:THREE.AdditiveBlending,depthWrite:false}));m.scale.set(w,1,d);m.position.set(x,.03,z);m.userData.own=true;m.userData.ownMatOnly=true;STG.world.add(m);STG.objs.push(m);STG.halos=(STG.halos||[]);STG.halos.push(m);return m}
+function setLegend(items){const L=$('#legend');if(L)L.innerHTML=items.map(([n,c])=>`<span><i style="background:${c}"></i>${esc(n)}</span>`).join('')}
+function setHud(a,b){const n=$('#hud-n'),s=$('#hud-s');if(n){n.textContent=a||'';s.textContent=b||''}}
+
+/* --- branch map --- */
+function buildBranch(list,animate){
+  STG.mode='branch';clearWorld();STG.halos=[];
+  const t=totals();setHud('فرع المنيا · '+list.length+' عيادات',`${fmt(t.mon)} متردد شهريًا · ${fmt(t.att)} مربوط`);
+  setLegend(REGS.map(r=>[r,rc(r)]).concat([['المترددين','#e7f2f5']]));
+  if(!STG.ok||!list.length)return;
+  const maxM=Math.max(1,...list.map(c=>int(c.monthly)||0)),maxA=Math.max(1,...list.map(c=>Math.min(int(c.attached)||0,600000)));
+  const regs=[...new Set([...REGS,...list.map(c=>c.region)])].filter(r=>list.some(c=>c.region===r));
+  const SP=11;let x=0;const zones=[];
+  regs.forEach(r=>{const cs=list.filter(c=>c.region===r).sort((a,b)=>(int(b.monthly)||0)-(int(a.monthly)||0));const cols=cs.length>2?2:1;const rows=Math.ceil(cs.length/cols);
+    const w=cols*SP+4,d=rows*SP+8;zones.push({r,cs,cols,rows,w,d,x});x+=w+5});
+  const tot=x-5,maxD=Math.max(...zones.map(z=>z.d));
+  let bi=0;
+  zones.forEach(z=>{
+    const cx=tot/2-(z.x+z.w/2),cz=0; // RTL: first region on the right
+    z.cx=cx;const col=rc(z.r);const gc=new THREE.Color(col);
+    const plate=new THREE.Mesh(new THREE.BoxGeometry(z.w,.1,maxD),new THREE.MeshStandardMaterial({color:0x0a1b27,roughness:.85,emissive:gc,emissiveIntensity:.05}));plate.position.set(cx,.05,cz);add(plate,true);
+    edgesAt(z.w,.1,maxD,cx,.05,cz,col,.7);
+    const strip=new THREE.Mesh(new THREE.PlaneGeometry(z.w,.6).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:gc,transparent:true,opacity:.55}));strip.position.set(cx,.11,maxD/2-.3);add(strip,true);
+    const lab=labelSprite(z.r,`${z.cs.length} عيادات · ${fmt(z.cs.reduce((a,c)=>a+(int(c.monthly)||0),0))} شهريًا`,col);lab.scale.set(11,11*150/640,1);lab.position.set(cx,1.6,maxD/2+2.2);add(lab);
+    z.cs.forEach((c,i)=>{
+      const col_i=i%z.cols,row=Math.floor(i/z.cols);
+      const bx=cx+(z.cols>1?(col_i?-SP/2:SP/2):0),bz=-maxD/2+6+row*SP+ (maxD-z.d)/2;
+      const att=Math.min(int(c.attached)||0,600000);const fw=3.4+2.6*Math.sqrt(att/maxA);
+      const H=2.5+20*((int(c.monthly)||0)/maxM);const nf=Math.max(1,Math.min(8,floorsOf(c).length));
+      const grp=new THREE.Group();grp.position.set(bx,0,bz);add(grp);
+      const body=new THREE.Mesh(STG.G.box,mat(0x10283a,{emissive:new THREE.Color(col),emissiveIntensity:.08,metalness:.4,roughness:.35}));body.scale.set(fw,H,fw);body.position.y=H/2;grp.add(body);
+      body.userData={cid:c.id,kind:'bld'};STG.picks.push(body);
+      const e=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(fw,H,fw)),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:.9}));e.position.y=H/2;grp.add(e);e.userData.own=true;STG.objs.push(e);
+      const fm=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.75});
+      for(let f=1;f<nf;f++){const s=new THREE.Mesh(STG.G.box,fm);s.scale.set(fw+.12,.08,fw+.12);s.position.y=H*f/nf;grp.add(s)}
+      const wm=new THREE.MeshBasicMaterial({color:0xe9f7ff,transparent:true,opacity:.55});
+      const wr=Math.max(1,Math.floor(H/1.3));for(let k=0;k<wr;k++){for(const side of [1,-1]){const wd=new THREE.Mesh(STG.G.box,wm);wd.scale.set(fw*.7,.22,.02);wd.position.set(0,.8+k*1.3,side*(fw/2+.01));grp.add(wd)}}
+      const cap=new THREE.Mesh(STG.G.box,new THREE.MeshBasicMaterial({color:col}));cap.scale.set(fw*.5,.25,fw*.5);cap.position.y=H+.13;grp.add(cap);
+      const door=new THREE.Mesh(STG.G.box,new THREE.MeshBasicMaterial({color:0x4fd1c5}));door.scale.set(1.1,1.2,.05);door.position.set(0,.6,fw/2+.03);grp.add(door);
+      halo(bx,bz,fw*2.4,fw*2.4,col,.3);
+      const lb=labelSprite(short(c),`${fmt(int(c.monthly))} شهريًا · ${fmt(int(derive(c).doctors))} طبيب`,col);lb.scale.set(8.5,8.5*150/640,1);lb.position.set(bx,H+2.2,bz);add(lb);
+      grp.userData.H=H;
+      STG.anims.push({o:grp,delay:bi*.12,kind:'grow'});grp.scale.y=animate&&!reduce?.001:1;
+      STG.targets.push({id:c.id,x:bx,z:bz,r:Math.max(16,H*1.6+10),y:H*.45,name:c.name});
+      const n=Math.max(3,Math.min(26,Math.round(dailyNum(c)/30)));
+      const pm=new THREE.MeshBasicMaterial({color:0xe7f2f5});
+      for(let k=0;k<n;k++){const p=new THREE.Mesh(STG.G.sph,k%4===0?new THREE.MeshBasicMaterial({color:col}):pm);p.scale.setScalar(.38);add(p);
+        const sx=bx+(Math.random()-.5)*SP*.9,sz=maxD/2-.4;STG.movers.push({m:p,a:[sx,sz],b:[bx+(Math.random()-.5)*.8,bz+fw/2+.3],t:Math.random(),sp:.06+Math.random()*.08,kind:'line'})}
+      bi++;
+    });
+  });
+  STG.bounds={w:tot+4,d:maxD+6,h:24};
+  STG.t0=performance.now();
+  if(animate)fitAll(true);
+}
+/* --- clinic building --- */
+function buildClinic(c,animate){
+  STG.mode='clinic';clearWorld();STG.halos=[];
+  const fls=floorsOf(c);const nRooms=fls.reduce((a,f)=>a+f.rooms.length,0);
+  setHud(c.name,`${fls.length} ${fls.length>2&&fls.length<11?'أدوار':'دور'} · ${nRooms} غرفة/وحدة مذكورة في الكارت`);
+  setLegend(RT.map(t=>[t[0],t[1]]));
+  if(!STG.ok)return;
+  const col=rc(c.region);
+  const maxR=Math.max(4,...fls.map(f=>f.rooms.length));const cols=Math.max(3,Math.ceil(Math.sqrt(maxR*1.7)));const rows=Math.ceil(maxR/cols);
+  const CW=3.1,W=cols*CW+2.4,D=rows*CW+3.4,GAP=4.6;
+  fls.forEach((f,fi)=>{
+    const y=fi*GAP;const grp=new THREE.Group();grp.position.y=y;add(grp);
+    const slab=new THREE.Mesh(STG.G.box,mat(0x0c2230,{emissive:new THREE.Color(col),emissiveIntensity:.05,transparent:true,opacity:.92}));slab.scale.set(W,.22,D);slab.position.y=0;grp.add(slab);
+    const e=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W,.22,D)),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:.85}));grp.add(e);e.userData.own=true;STG.objs.push(e);
+    const pillarM=mat(0x1d3a4a);for(const [px,pz] of [[W/2,D/2],[-W/2,D/2],[W/2,-D/2],[-W/2,-D/2]]){if(fi<fls.length-1){const p=new THREE.Mesh(STG.G.box,pillarM);p.scale.set(.18,GAP,.18);p.position.set(px,GAP/2,pz);grp.add(p)}}
+    const lab=labelSprite(f.name,f.rooms.length?`${f.rooms.length} غرفة/وحدة`:'غير مستغل أو لم يُذكر',f.rooms.length?col:'#5f7f8c');lab.scale.set(8,8*150/640,1);lab.position.set(W/2+4.6,1.2,D/2-1);grp.add(lab);STG.objs.push(lab);
+    f.rooms.forEach((rn,ri)=>{
+      const cc=ri%cols,rr=Math.floor(ri/cols);const t=roomType(rn);
+      const rx=W/2-1.2-CW*(cc+.5),rz=-D/2+1.4+CW*(rr+.5);
+      const h=1.2+((hashStr(rn+ri)%40)/100);
+      const room=new THREE.Mesh(STG.G.box,mat(t[1],{emissive:new THREE.Color(t[1]),emissiveIntensity:.22,transparent:true,opacity:.88}));room.scale.set(CW-.6,h,CW-.6);room.position.set(rx,.11+h/2,rz);grp.add(room);
+      room.userData={kind:'room',name:rn,type:t[0],floor:f.name};STG.picks.push(room);
+      const top=new THREE.Mesh(STG.G.box,new THREE.MeshBasicMaterial({color:t[1]}));top.scale.set(CW-.5,.06,CW-.5);top.position.set(rx,.11+h+.03,rz);grp.add(top);
+    });
+    if(!f.rooms.length){const ghost=new THREE.Mesh(STG.G.box,new THREE.MeshBasicMaterial({color:0x5f7f8c,transparent:true,opacity:.12}));ghost.scale.set(W-1,1.4,D-1);ghost.position.y=.8;grp.add(ghost)}
+    // people walking on the floor
+    const np=Math.min(8,Math.max(f.rooms.length?2:0,Math.round(f.rooms.length/2)));
+    for(let k=0;k<np;k++){const p=new THREE.Mesh(STG.G.sph,new THREE.MeshBasicMaterial({color:k%3?0xe7f2f5:new THREE.Color(col)}));p.scale.setScalar(.42);grp.add(p);
+      const rnd=()=>[(Math.random()-.5)*(W-1.4),(Math.random()-.5)*(D-1.4)];const a=rnd();p.position.set(a[0],.45,a[1]);
+      STG.movers.push({m:p,a,b:rnd(),t:0,sp:.12+Math.random()*.15,kind:'walk',rnd})}
+    grp.userData.y=y;STG.anims.push({o:grp,delay:fi*.18,kind:'drop',y});if(animate&&!reduce){grp.position.y=y+14;grp.visible=false}
+    STG.targets.push({id:'f'+fi,x:0,z:0,y:y,r:Math.max(14,Math.max(W,D)*1.25),name:f.name});
+  });
+  halo(0,0,W*1.8,D*1.8,col,.35);
+  STG.bounds={w:Math.max(W,D)+10,d:D+4,h:fls.length*GAP};
+  STG.t0=performance.now();
+  if(animate)fitAll(true);
+}
+function fitAll(instant){
+  if(!STG.ok||!STG.bounds)return;const b=STG.bounds;const span=Math.max(b.w,b.d*1.3,b.h*1.6);
+  Object.assign(STG.Og,{tx:0,ty:STG.mode==='clinic'?b.h*.4:2,tz:0,r:Math.max(22,span*1.05+10),ph:STG.mode==='clinic'?1.05:.95});
+  if(instant)Object.assign(STG.O,{...STG.Og,r:STG.Og.r*1.6,th:STG.Og.th-.8});
+}
+function flyTo(t){if(!STG.ok||!t)return;Object.assign(STG.Og,{tx:t.x,ty:t.y||0,tz:t.z,r:t.r,ph:STG.mode==='clinic'?.98:.88})}
+function startTour(){if(!STG.targets.length)return;let i=0;$('#b-tour').textContent='■ إيقاف';
+  const step=()=>{const t=STG.targets[i%STG.targets.length];flyTo(t);hiRow(t.id);i++};step();
+  STG.tour=setInterval(()=>{if(i>=STG.targets.length){stopTour();fitAll();return}step()},3000)}
+function stopTour(){if(STG.tour){clearInterval(STG.tour);STG.tour=null}const b=$('#b-tour');if(b)b.textContent='▶ جولة';hiRow(null)}
+function hiRow(id){$$('.drow').forEach(r=>r.classList.toggle('on',r.dataset.id===id))}
+function bindOrbit(cv){
+  let drag=null;const pts=new Map();
+  cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});drag={moved:0};STG.lastUser=performance.now();stopTour()});
+  cv.addEventListener('pointermove',e=>{const tip=$('#tip');
+    if(pts.has(e.pointerId)){const prev=pts.get(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(pts.size===2){const [a,b]=[...pts.values()];const dist=Math.hypot(a.x-b.x,a.y-b.y);if(drag.pd)STG.Og.r=Math.min(300,Math.max(8,STG.Og.r*drag.pd/dist));drag.pd=dist;return}
+      const dx=e.clientX-prev.x,dy=e.clientY-prev.y;drag.moved+=Math.abs(dx)+Math.abs(dy);STG.Og.th-=dx*.006;STG.Og.ph=Math.min(1.45,Math.max(.22,STG.Og.ph-dy*.005));STG.lastUser=performance.now();tip.hidden=true;return}
+    const h=pick(e);
+    if(h){tip.hidden=false;tip.style.left=e.clientX+'px';tip.style.top=e.clientY+'px';
+      if(h.kind==='bld'){const c=H(h.cid);if(c){const d=derive(c);tip.innerHTML=`<b>${esc(c.name)}</b><br>${esc(c.region||'')} · ${fmt(int(c.monthly))} متردد شهريًا<br>${fmt(int(c.attached))} مربوط · ${fmt(int(d.doctors))} طبيب · ${fmt(int(d.nurses))} تمريض`}}
+      else tip.innerHTML=`<b>${esc(h.name)}</b><br>${esc(h.floor)} · ${esc(h.type)}`;cv.style.cursor='pointer'}
+    else{tip.hidden=true;cv.style.cursor=''}});
+  const up=e=>{pts.delete(e.pointerId);if(drag&&drag.moved<6&&!pts.size){const h=pick(e);if(h&&h.kind==='bld'){const t=STG.targets.find(x=>x.id===h.cid);flyTo(t);hiRow(h.cid)}}if(!pts.size)drag=null};
+  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',e=>{pts.delete(e.pointerId);drag=null});
+  cv.addEventListener('pointerleave',()=>{$('#tip').hidden=true});
+  cv.addEventListener('dblclick',e=>{const h=pick(e);if(h&&h.kind==='bld')openCard(h.cid)});
+  cv.addEventListener('wheel',e=>{e.preventDefault();STG.Og.r=Math.min(300,Math.max(8,STG.Og.r*(1+Math.sign(e.deltaY)*.09)));STG.lastUser=performance.now()},{passive:false});
+}
+function pick(e){if(!STG.ok||!STG.picks.length)return null;const rc_=STG.r.domElement.getBoundingClientRect();STG.mouse.set(((e.clientX-rc_.left)/rc_.width)*2-1,-((e.clientY-rc_.top)/rc_.height)*2+1);STG.ray.setFromCamera(STG.mouse,STG.cam);const hs=STG.ray.intersectObjects(STG.picks,false);return hs.length?hs[0].object.userData:null}
+function loop(){
+  requestAnimationFrame(loop);
+  if(!STG.visible||!$('#stage')||!$('#stage').offsetParent)return;
+  const t=STG.clock.getElapsedTime(),dt=Math.min(.05,STG.clock.getDelta()),O=STG.O,G=STG.Og;
+  if(!reduce&&!STG.tour&&performance.now()-STG.lastUser>3500)G.th+=.0016;
+  for(const k of ['th','ph','r','tx','ty','tz'])O[k]+=(G[k]-O[k])*.07;
+  STG.cam.position.set(O.tx+O.r*Math.sin(O.ph)*Math.sin(O.th),O.ty+O.r*Math.cos(O.ph),O.tz+O.r*Math.sin(O.ph)*Math.cos(O.th));STG.cam.lookAt(O.tx,O.ty,O.tz);
+  const el=(performance.now()-(STG.t0||0))/1000;
+  for(const a of STG.anims){const p=reduce?1:Math.min(1,Math.max(0,(el-a.delay)/.9));const e=1-Math.pow(1-p,3);
+    if(a.kind==='grow'){const back=p<1?(1+2.2*Math.pow(p-1,3)+1.2*Math.pow(p-1,2)):1;a.o.scale.y=Math.max(.001,Math.min(1.06,back))}
+    else{a.o.visible=p>0;a.o.position.y=a.y+(1-e)*14}}
+  for(const m of STG.movers){
+    if(m.kind==='line'){m.t+=m.sp*dt*3;if(m.t>1)m.t=0;const k=m.t;m.m.position.set(m.a[0]+(m.b[0]-m.a[0])*k,.4+Math.abs(Math.sin(k*Math.PI*10))*.12,m.a[1]+(m.b[1]-m.a[1])*k);m.m.visible=k<.97}
+    else{m.t+=m.sp*dt;if(m.t>=1){m.a=m.b;m.b=m.rnd();m.t=0}const k=m.t<.5?2*m.t*m.t:1-Math.pow(-2*m.t+2,2)/2;m.m.position.x=m.a[0]+(m.b[0]-m.a[0])*k;m.m.position.z=m.a[1]+(m.b[1]-m.a[1])*k;m.m.position.y=.45+Math.abs(Math.sin(t*8+m.sp*40))*.08}}
+  if(STG.halos)for(const h of STG.halos)h.material.opacity=.24+Math.sin(t*2.2)*.08;
+  if(!reduce){STG.parts.rotation.y=t*.01;const pa=STG.parts.geometry.attributes.position;for(let i=1;i<pa.array.length;i+=3){pa.array[i]+=.008;if(pa.array[i]>34)pa.array[i]=0}pa.needsUpdate=true}
+  if(STG.bounds){const W=STG.bounds.w+10;const ph=(t*.12)%1;STG.scan.position.x=W/2-ph*W;STG.scan.scale.set(1,STG.bounds.d+8,1)}
+  STG.r.render(STG.scene,STG.cam);
+}
+function refreshStage(animate){
+  if(S.view==='card'){const c=H(S.sel);if(c){const key='c:'+c.id+':'+(c.updatedAt||'');if(STG.key!==key||animate){STG.key=key;buildClinic(c,true)}}renderFloors();return}
+  const key='b:'+S.cl.map(c=>c.id+(c.updatedAt||'')).join('|');if(STG.key!==key||animate){STG.key=key;buildBranch(S.cl,true)}
+}
+function renderFloors(){
+  const c=H(S.sel);const L=$('#fl-list');if(!c||!L)return;const fls=floorsOf(c);
+  $('#bld-title').textContent='المبنى الافتراضي · '+short(c);
+  $('#fl-sub').textContent='اضغط على دور لتنتقل الكاميرا إليه';
+  L.innerHTML=fls.map((f,i)=>{const types={};f.rooms.forEach(r=>{const t=roomType(r);types[t[0]]=(types[t[0]]||0)+1});
+    return `<button class="drow" type="button" data-id="f${i}"><i class="c" style="background:${f.rooms.length?rc(c.region):'var(--dim)'}"></i><span class="n">${esc(f.name)}<small>${f.rooms.length?esc(Object.entries(types).map(([k,v])=>v+' '+k).join(' · ')):'غير مستغل أو لم يُذكر'}</small></span><span class="q">${f.rooms.length}</span></button>`}).join('');
+  L.onclick=e=>{const b=e.target.closest('.drow');if(!b)return;stopTour();flyTo(STG.targets.find(t=>t.id===b.dataset.id));hiRow(b.dataset.id)};
+}
+
+/* ===================== DASHBOARD ===================== */
+const totals=()=>{const t={att:0,mon:0,doc:0,nur:0,ph:0};for(const c of S.cl){t.att+=int(c.attached)||0;t.mon+=int(c.monthly)||0;const d=derive(c);t.doc+=int(d.doctors)||0;t.nur+=int(d.nurses)||0;t.ph+=int(d.pharm)||0}return t};
+function animateNum(el,to){const from=+el.dataset.v||0;el.dataset.v=to;if(reduce||from===to){el.textContent=fmt(to);return}const t0=performance.now();const f=t=>{const p=Math.min(1,(t-t0)/1100),e=1-Math.pow(1-p,3);el.textContent=fmt(Math.round(from+(to-from)*e));if(p<1)requestAnimationFrame(f)};requestAnimationFrame(f)}
+function renderKPIs(){
+  const t=totals(),up=S.cl.filter(c=>c.updatedAt).length;
+  const items=[{l:'عدد العيادات',v:S.cl.length,s:`في ${new Set(S.cl.map(c=>c.region)).size} مناطق طبية`,c:'var(--accent)'},{l:'المربوطون على العيادات',v:t.att,s:'كما ورد في كل كارت',c:'var(--r1)'},{l:'التردد الشهري',v:t.mon,s:`≈ ${fmt(Math.round(t.mon/26))} متردد يوميًا`,c:'var(--r2)'},{l:'الأطباء',v:t.doc,s:t.doc?`${fmt(Math.round(t.mon/t.doc))} متردد شهريًا لكل طبيب`:'',c:'var(--r3)'},{l:'التمريض',v:t.nur,s:`و${fmt(t.ph)} صيدلي`,c:'var(--ok)'},{l:'كروت محدّثة من البوابة',v:up,s:`من ${S.cl.length} عيادات`,c:'var(--warn)'}];
+  const box=$('#kpis');
+  if(box.children.length!==items.length)box.innerHTML=items.map((_,i)=>`<div class="kpi rv" style="--i:${i}"><div class="l"></div><div class="v num">0</div><div class="s"></div><i class="bar"></i></div>`).join('');
+  items.forEach((it,i)=>{const k=box.children[i];k.style.setProperty('--c',it.c);k.querySelector('.l').textContent=it.l;k.querySelector('.s').textContent=it.s;animateNum(k.querySelector('.v'),it.v)});
+}
+function renderDashList(){
+  const L=$('#dash-list');const rows=[...S.cl].sort((a,b)=>(int(b.monthly)||0)-(int(a.monthly)||0));const mx=Math.max(1,...rows.map(c=>int(c.monthly)||0));
+  L.innerHTML=rows.map(c=>`<button class="drow" type="button" data-id="${esc(c.id)}"><i class="c" style="background:${rc(c.region)}"></i><span class="n">${esc(short(c))}<small>${esc(c.region||'')} · ${esc(c.type||'')}</small><span class="st" style="display:block;height:4px;border-radius:3px;background:var(--line);margin-top:4px;overflow:hidden"><i style="display:block;height:100%;width:${(int(c.monthly)||0)/mx*100}%;background:${rc(c.region)}"></i></span></span><span class="q">${fmt(int(c.monthly))}</span></button>`).join('');
+  L.onclick=e=>{const b=e.target.closest('.drow');if(!b)return;stopTour();flyTo(STG.targets.find(t=>t.id===b.dataset.id));hiRow(b.dataset.id)};
+}
+function renderRegions(){
+  const regs=[...new Set([...REGS,...S.cl.map(c=>c.region).filter(Boolean)])].filter(r=>S.cl.some(c=>c.region===r));
+  const all=S.cl.reduce((a,c)=>a+(int(c.monthly)||0),0)||1;
+  $('#regions').innerHTML=regs.map((r,ri)=>{const cs=S.cl.filter(c=>c.region===r).sort((a,b)=>(int(b.monthly)||0)-(int(a.monthly)||0));
+    const mon=cs.reduce((a,c)=>a+(int(c.monthly)||0),0),att=cs.reduce((a,c)=>a+(int(c.attached)||0),0),doc=cs.reduce((a,c)=>a+(int(derive(c).doctors)||0),0),nur=cs.reduce((a,c)=>a+(int(derive(c).nurses)||0),0);
+    return `<article class="reg rv" style="--c:${rc(r)};--i:${ri}"><div class="rh"><h3>${esc(r)}</h3><span>${cs.length} عيادات · ${Math.round(mon/all*100)}% من تردد الفرع</span></div>
+      <div class="rn"><div><b>${fmt(mon)}</b><span>تردد شهري</span></div><div><b>${fmt(att)}</b><span>مربوطون</span></div><div><b>${fmt(doc)}</b><span>أطباء</span></div><div><b>${fmt(nur)}</b><span>تمريض</span></div></div>
+      <div class="share">${cs.map(c=>`<button type="button" data-h="${esc(c.id)}"><span class="sn">${esc(short(c))}</span><span class="sv">${fmt(int(c.monthly))}</span><span class="st"><i style="width:${mon?(int(c.monthly)||0)/mon*100:0}%;transform-origin:right;animation:grow .9s both"></i></span></button>`).join('')}</div></article>`}).join('');
+  $('#regions').onclick=e=>{const b=e.target.closest('[data-h]');if(b)openCard(b.dataset.h)};
+}
+function canEdit(id){return S.admin||(S.myCid&&S.myCid===id)}
+function renderGrid(){
+  const g=$('#hgrid');
+  if(!S.cl.length){g.innerHTML=`<div class="empty">${S.dbOk===false?'تعذّر الاتصال بقاعدة البيانات.':'جارٍ تحميل كروت العيادات…'}</div>`;$('#hg-sub').textContent='';return}
+  $('#hg-sub').innerHTML=`${S.cl.length} عيادات · اضغط «الكارت» لعرض كل التفاصيل والمبنى ثلاثي الأبعاد`+(S.fromSeed&&S.admin?` · <button class="btn pri sm" type="button" id="seedBtn">حفظ بيانات الكروت في قاعدة البيانات</button>`:'');
+  const sb=$('#seedBtn');if(sb)sb.onclick=importSeed;
+  g.innerHTML=S.cl.map((c,i)=>{const f=fresh(c),d=derive(c);
+    return `<article class="hcard rv" style="--i:${i}" data-h="${esc(c.id)}">
+      <div class="t1"><div style="min-width:0"><h4>${esc(c.name)}</h4><div class="meta">${esc(c.type||'')}</div></div><span class="rtag" style="--c:${rc(c.region)}">${esc(c.region||'')}</span></div>
+      <div class="big"><b>${fmt(int(c.monthly))}</b><span>متردد شهريًا · ${esc(c.daily||'—')} يوميًا</span></div>
+      <div class="hnums"><div><b>${fmt(int(c.attached))}</b><span>مربوط</span></div><div><b>${fmt(int(d.doctors))}</b><span>طبيب</span></div><div><b>${fmt(int(d.nurses))}</b><span>تمريض</span></div><div><b>${fmt(int(d.pharm))}</b><span>صيدلي</span></div></div>
+      <div><span class="pill ${f.c}">${esc(f.t)}</span></div>
+      <div class="acts"><button class="btn sm" type="button" data-act="card">الكارت 3D</button>${canEdit(c.id)?'<button class="btn sm" type="button" data-act="edit">تحديث البيانات</button>':''}</div>
+    </article>`}).join('');
+  g.onclick=e=>{const c=e.target.closest('.hcard');if(!c)return;const a=e.target.closest('[data-act]');if(!a)return;if(a.dataset.act==='edit')openPortal(c.dataset.h);else openCard(c.dataset.h)};
+}
+function nice(m){const p=Math.pow(10,Math.floor(Math.log10(m||1)));for(const k of [1,2,2.5,5,10])if(k*p>=m)return k*p;return 10*p}
+function renderBars(){
+  $('#reg-keys').innerHTML=REGS.map(r=>`<span><i style="background:${rc(r)}"></i>${r}</span>`).join('');
+  const rows=[...S.cl].sort((a,b)=>(int(b.monthly)||0)-(int(a.monthly)||0));const mx=nice(Math.max(1,...rows.map(c=>int(c.monthly)||0)));
+  $('#bars-freq').innerHTML=rows.map((c,i)=>`<div class="brow"><span class="bn" title="${esc(c.name)}">${esc(short(c))}</span><span class="bt"><i style="width:${(int(c.monthly)||0)/mx*100}%;background:${rc(c.region)};animation-delay:${i*.06}s"></i></span><span class="bv">${fmt(int(c.monthly))}</span></div>`).join('')+`<div class="axis"><span></span><span class="ticks">${[0,.25,.5,.75,1].map(f=>`<span>${fmt(mx*f)}</span>`).join('')}</span><span></span></div>`;
+  const L=S.cl.map(c=>{const d=derive(c),m=int(c.monthly)||0,dd=int(d.doctors),nn=int(d.nurses);return {c,pd:dd?m/dd:null,pn:nn?m/nn:null}}).sort((a,b)=>(b.pd||0)-(a.pd||0));
+  const lm=nice(Math.max(1,...L.flatMap(x=>[x.pd||0,x.pn||0])));
+  $('#bars-load').innerHTML=L.map((x,i)=>`<div class="brow"><span class="bn" title="${esc(x.c.name)}">${esc(short(x.c))}</span><span class="bt"><i style="width:${(x.pd||0)/lm*100}%;background:var(--accent);animation-delay:${i*.06}s"></i><i style="width:${(x.pn||0)/lm*100}%;background:var(--r2);animation-delay:${i*.06+.1}s"></i></span><span class="bv" style="font-size:12px;line-height:1.3">${fmt(x.pd&&Math.round(x.pd))}<br><span style="color:var(--mute)">${fmt(x.pn&&Math.round(x.pn))}</span></span></div>`).join('')+`<div class="axis"><span></span><span class="ticks">${[0,.25,.5,.75,1].map(f=>`<span>${fmt(lm*f)}</span>`).join('')}</span><span></span></div>`;
+}
+function specMap(c){const m={};for(const s of (c.specs||[])){const k=specKey(s.name);m[k]=(m[k]||0)+(int(s.count)||0)}return m}
+function renderHeat(){
+  const maps=S.cl.map(specMap);const keys={};maps.forEach(m=>Object.entries(m).forEach(([k,v])=>{if(v>0)keys[k]=(keys[k]||0)+1}));
+  const cols=Object.keys(keys).sort((a,b)=>keys[b]-keys[a]||a.localeCompare(b,'ar'));const max=Math.max(1,...maps.flatMap(m=>cols.map(k=>m[k]||0)));let d=0;
+  $('#heat').innerHTML=`<table><thead><tr><th></th>${S.cl.map(c=>`<th>${esc(short(c))}</th>`).join('')}<th>عيادات</th></tr></thead><tbody>${cols.map(k=>`<tr><th class="rn">${esc(k)}</th>${maps.map(m=>{const v=m[k]||0;const a=v?(.18+.72*Math.min(1,v/Math.min(max,12))):0;d++;return v?`<td style="--d:${d};background:rgba(79,209,197,${a.toFixed(2)});color:${a>.55?'var(--accent-ink)':'var(--fg)'}">${v}</td>`:`<td class="z" style="--d:${d}">·</td>`}).join('')}<td style="color:var(--mute)">${keys[k]}/${S.cl.length}</td></tr>`).join('')}</tbody></table>`;
+}
+function renderSvc(){let d=0;$('#svc').innerHTML=`<table><thead><tr><th></th>${S.cl.map(c=>`<th>${esc(short(c))}</th>`).join('')}</tr></thead><tbody>${SVC.map(([n,re])=>`<tr><th class="rn">${n}</th>${S.cl.map(c=>{const f=svcFlag(c,re);d++;return f==='y'?`<td class="y" style="--d:${d}">✓</td>`:f==='n'?`<td class="n" style="--d:${d}">✗</td>`:`<td class="z" style="--d:${d}">·</td>`}).join('')}</tr>`).join('')}</tbody></table>`}
+function renderLog(){const L=$('#log');if(!S.log.length){L.innerHTML=`<div class="empty">لسه مفيش تحديثات. أول ما عيادة تحفظ من البوابة هيظهر هنا اسمها ووقت التحديث.</div>`;return}
+  L.innerHTML=S.log.map(l=>`<div class="lrow"><i></i><div><b>${esc(l.hname||'')}</b> — ${esc(l.summary||'')}<small>${esc(l.byLabel||'')}</small></div><time datetime="${esc(l.at)}">${esc(rel(l.at)||'')}</time></div>`).join('')}
+const SEC_TITLES=[['team','الفريق الإداري والطبي'],['bld','المبنى والبنية التحتية'],['rooms','غرف الكشف والتخصصات'],['pharm','الصيدليات'],['comm','اللجان التخصصية'],['dev','الأجهزة الطبية'],['svc','الخدمات المساعدة'],['co','الشركات المتعاقد معها']];
+const BLANK_SECTIONS=()=>SEC_TITLES.map(([id,title])=>({id,title,rows:[]}));
+function renderTools(){
+  const tp=$('#tools-panel');tp.hidden=!S.admin;if(!S.admin)return;
+  const opts=S.cl.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  const keep={acH:$('#acH')&&$('#acH').value,delH:$('#delH')&&$('#delH').value,acE:$('#acE')&&$('#acE').value};
+  const users=S.users.map(u=>`<div class="lrow" style="grid-template-columns:minmax(0,1fr) auto"><div><span dir="ltr">${esc(showUser(u.email))}</span><small>${esc((H(u.cid)||{}).name||'عيادة محذوفة')}</small></div><button class="btn sm danger" type="button" data-unlink="${esc(u.uid)}">إلغاء الربط</button></div>`).join('')||'<p>لسه مفيش حسابات عيادات.</p>';
+  $('#tools').innerHTML=`
+   <div class="tool"><h4>حساب دخول لعيادة</h4><p>اعمل اسم مستخدم وكلمة سر لكل عيادة. الحساب ده يعدّل كارت عيادته بس.</p>
+     <label class="field" for="acH">العيادة<select class="inp" id="acH">${opts}</select></label>
+     <label class="field" for="acE">اسم المستخدم أو الإيميل<input class="inp" id="acE" dir="ltr" placeholder="mallawi-clinic" autocomplete="off" autocapitalize="off"></label>
+     <label class="field" for="acP">كلمة السر (6 حروف أو أكتر)<input class="inp" id="acP" type="text" dir="ltr" autocomplete="off"></label>
+     <button class="btn pri sm" type="button" id="acAdd">إنشاء الحساب</button><div class="msg" id="acMsg" aria-live="polite"></div>
+     <div class="log" style="max-height:200px">${users}</div></div>
+   <div class="tool"><h4>إضافة عيادة</h4><p>تظهر فورًا في اللوحة والبوابة والخريطة، والعيادة تكمّل الكارت بنفسها.</p>
+     <label class="field" for="nhN">اسم العيادة<input class="inp" id="nhN" placeholder="عيادة …"></label>
+     <div class="row"><label class="field" style="flex:1" for="nhR">المنطقة<select class="inp" id="nhR">${REGS.map(r=>`<option>${r}</option>`).join('')}</select></label><label class="field" style="flex:1" for="nhT">النوع<input class="inp" id="nhT" placeholder="شاملة / مؤجرة"></label></div>
+     <button class="btn pri sm" type="button" id="nhAdd">إضافة</button><div class="msg" id="nhMsg" aria-live="polite"></div>
+     <p style="margin-top:6px">حسابات المديرين مشتركة مع «نبض الأسرّة»: أي مدير هناك مدير هنا.</p></div>
+   <div class="tool"><h4>تصدير وإدارة</h4><p>تصدير ملخص العيادات والقوى البشرية لملف يفتح في Excel.</p>
+     <button class="btn sm" type="button" id="exp">⬇ تصدير CSV</button>
+     <label class="field" for="delH">حذف عيادة<select class="inp" id="delH">${opts}</select></label>
+     <div class="row"><button class="btn danger sm" type="button" id="delBtn">حذف</button><span id="delConfirm"></span></div><div class="msg" id="exMsg" aria-live="polite"></div></div>`;
+  if(keep.acH)$('#acH').value=keep.acH;if(keep.delH)$('#delH').value=keep.delH;if(keep.acE)$('#acE').value=keep.acE;
+  $('#acAdd').onclick=async()=>{const cid=$('#acH').value,raw=$('#acE').value.trim(),em=toEmail(raw),pw=$('#acP').value,m=$('#acMsg');
+    if(raw.length<3){m.className='msg err';m.textContent='اكتب اسم مستخدم (إنجليزي) أو إيميل';return}
+    if(pw.length<6){m.className='msg err';m.textContent='كلمة السر لازم 6 حروف على الأقل';return}
+    if(S.fromSeed){await importSeed()}
+    m.className='msg';m.textContent='جارٍ الإنشاء…';
+    try{const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(window.FIREBASE_CONFIG,'sec');
+      const cr=await sec.auth().createUserWithEmailAndPassword(em,pw);await fdb.collection('clinicUsers').doc(cr.user.uid).set({cid,email:em,at:new Date().toISOString()});await sec.auth().signOut();
+      m.className='msg ok';m.textContent=`اتعمل الحساب. ابعت لـ${H(cid).name}: ${showUser(em)} وكلمة السر`;$('#acE').value='';$('#acP').value=''}
+    catch(e){m.className='msg err';m.textContent=e.code==='auth/email-already-in-use'?'اسم المستخدم ده مستخدم قبل كده':'ماقدرناش نعمل الحساب ('+(e.code||'خطأ')+')'}};
+  $$('[data-unlink]').forEach(b=>b.onclick=async()=>{try{await fdb.collection('clinicUsers').doc(b.dataset.unlink).delete()}catch(e){$('#acMsg').className='msg err';$('#acMsg').textContent='ماقدرناش نلغي الربط'}});
+  $('#nhAdd').onclick=async()=>{const n=$('#nhN').value.trim(),m=$('#nhMsg');if(n.length<3){m.className='msg err';m.textContent='اكتب اسم العيادة';return}
+    if(S.fromSeed)await importSeed();
+    const id='c-'+Date.now().toString(36);const order=Math.max(0,...S.cl.map(c=>+c.order||0))+1;
+    try{await fdb.collection('clinics').doc(id).set({id,order,short:n.replace(/^عياد[ةه]\s*/,''),name:n,region:$('#nhR').value,type:$('#nhT').value.trim(),attached:null,daily:'',monthly:null,annual:null,doctors:null,pharm:null,nurses:null,cats:'',env:'',urban:'',address:'',phone:'',source:'أضيفت من لوحة الإدارة',specs:[],staff:[],sections:BLANK_SECTIONS(),updatedAt:null,updatedBy:null});
+      m.className='msg ok';m.textContent='اتضافت '+n;$('#nhN').value=''}catch(e){m.className='msg err';m.textContent='ماقدرناش نضيف العيادة'}};
+  $('#exp').onclick=exportCSV;
+  $('#delBtn').onclick=()=>{const hid=$('#delH').value;$('#delConfirm').innerHTML=`<button class="btn danger sm" type="button" id="delYes">تأكيد حذف ${esc(short(H(hid)))}</button>`;
+    $('#delYes').onclick=async()=>{try{await fdb.collection('clinics').doc(hid).delete();$('#exMsg').className='msg ok';$('#exMsg').textContent='اتحذفت العيادة';$('#delConfirm').innerHTML=''}catch(e){$('#exMsg').className='msg err';$('#exMsg').textContent='ماقدرناش نحذف'}}};
+}
+function exportCSV(){
+  const q=v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
+  const rows=[['العيادة','المنطقة','النوع','المربوطون','التردد اليومي','التردد الشهري','التردد السنوي','الأطباء','الصيادلة','التمريض','العنوان','التليفون','آخر تحديث']];
+  for(const c of S.cl){const d=derive(c);rows.push([c.name,c.region,c.type,c.attached,c.daily,c.monthly,c.annual,d.doctors,d.pharm,d.nurses,c.address,c.phone,c.updatedAt?new Date(c.updatedAt).toLocaleString('ar-EG'):'من الكارت الأصلي'])}
+  rows.push([]);rows.push(['العيادة','الفئة','الإجمالي','معين','متعاقد','فترات','فوق السن']);
+  for(const c of S.cl)for(const s of (c.staff||[]))rows.push([c.name,s.cat,s.total,s.app,s.con,s.per,s.over]);
+  const csv='﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='نبض-العيادات-المنيا.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+  const m=$('#exMsg');m.className='msg ok';m.textContent='اتجهز الملف';
+}
+function renderDashboard(){renderKPIs();renderDashList();renderRegions();renderGrid();renderBars();renderHeat();renderSvc();renderLog();renderTools()}
+
+/* ===================== CARD ===================== */
+function openCard(id){S.sel=id;if(location.hash!=='#card')location.hash='#card';else{renderCard();refreshStage(true)}}
+function barcode(id){let h=hashStr(id+'minia');const out=[];for(let i=0;i<46;i++){h=Math.imul(h^(h>>>15),2246822507)>>>0;out.push(`<i style="width:${1+(h%3)}px"></i>`)}return out.join('')}
+function kvRows(rows){
+  if(!rows||!rows.length)return '<p class="sub" style="margin:0">لم يرد في الكارت</p>';
+  return `<div class="kv">${rows.map(r=>{const k=String(r.k||''),v=String(r.v||'').trim();if(!v||v==='العدد')return `<div class="sh">${esc(k)}</div>`;return `<div><span class="k">${esc(k)}</span><span class="v ${NEG.test(v.replace(/\s/g,''))?'neg':''}">${esc(v)}</span></div>`}).join('')}</div>`;
+}
+function renderCard(){
+  const chips=$('#chips');
+  chips.innerHTML=S.cl.map(c=>`<button class="chip" type="button" data-h="${esc(c.id)}" aria-pressed="${c.id===S.sel}">${esc(short(c))}</button>`).join('');
+  chips.onclick=e=>{const b=e.target.closest('.chip');if(b){S.sel=b.dataset.h;renderCard();refreshStage(true)}};
+  const c=H(S.sel)||S.cl[0];const T=$('#cardtop'),B=$('#cardbody');
+  if(!c){T.innerHTML=`<div class="empty">جارٍ تحميل الكروت…</div>`;B.innerHTML='';return}
+  S.sel=c.id;const d=derive(c),f=fresh(c);
+  $('#card-title').textContent=c.name;
+  $('#card-sub').innerHTML=`${esc(c.region||'')} · ${esc(c.type||'')} · <span class="pill ${f.c}">${esc(f.t)}</span>`;
+  const eb=$('#cardEdit');eb.hidden=!canEdit(c.id);eb.onclick=()=>openPortal(c.id);
+  const ch=chips.querySelector('[aria-pressed="true"]');if(ch)ch.scrollIntoView({block:'nearest',inline:'center'});
+  const sec=id=>(c.sections||[]).find(s=>s.id===id)||{rows:[]};
+  T.innerHTML=`<div class="cardhero">
+    <div class="idc sweep" id="idc" style="--c:${rc(c.region)}"><span class="shine"></span>
+      <div class="ih"><div class="org"><b>الهيئة العامة للتأمين الصحي</b>فرع المنيا · ${esc(c.region||'')}</div>
+        <svg class="emb" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="none" stroke="rgba(234,247,246,.5)" stroke-width="1.5"/><path d="M24 11v26M11 24h26" stroke="#4fd1c5" stroke-width="6" stroke-linecap="round"/></svg></div>
+      <div class="chipm" aria-hidden="true"></div>
+      <div><div class="nm">${esc(c.name)}</div><div class="tp">${esc(c.type||'')}${c.address?' · '+esc(c.address):''}</div></div>
+      <div class="st"><div><b class="cnt" data-to="${int(c.attached)||0}">0</b><span>مربوط</span></div><div><b class="cnt" data-to="${int(c.monthly)||0}">0</b><span>تردد شهري</span></div><div><b class="cnt" data-to="${int(d.doctors)||0}">0</b><span>طبيب</span></div><div><b class="cnt" data-to="${int(d.nurses)||0}">0</b><span>تمريض</span></div></div>
+      <div class="ft"><span>كارت تعريف · ${esc(String(c.id).toUpperCase())}</span><span class="bc" aria-hidden="true">${barcode(c.id)}</span></div>
+    </div>
+    <div class="facts">
+      <div class="fact rv" style="--i:1"><span>التردد اليومي</span><b>${esc(c.daily||'—')}</b></div>
+      <div class="fact rv" style="--i:2"><span>التردد السنوي</span><b>${fmt(int(c.annual))}</b></div>
+      <div class="fact rv" style="--i:3"><span>الصيادلة</span><b>${fmt(int(d.pharm))}</b></div>
+      <div class="fact rv" style="--i:4"><span>التليفون</span><b dir="ltr" style="user-select:all">${esc(c.phone||'—')}</b></div>
+      <div class="fact w rv" style="--i:5"><span>الفئات المقدَّم لها الخدمة</span><b>${esc(c.cats||'—')}</b></div>
+      <div class="fact rv" style="--i:6"><span>البيئة المحيطة</span><b>${esc([c.env,c.urban].filter(Boolean).join(' · ')||'—')}</b></div>
+      <div class="fact rv" style="--i:7"><span>المصدر</span><b style="font-size:12.5px">${esc(c.source||'—')}</b></div>
+    </div></div>`;
+  $$('#idc .cnt').forEach(el=>{el.dataset.v=0;animateNum(el,+el.dataset.to)});
+  const idc=$('#idc');
+  if(!reduce&&matchMedia('(hover:hover)').matches){idc.onpointermove=e=>{const r=idc.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;idc.style.transform=`perspective(1100px) rotateY(${(x-.5)*14}deg) rotateX(${(.5-y)*10}deg)`;idc.style.setProperty('--mx',x*100+'%');idc.style.setProperty('--my',y*100+'%')};idc.onpointerleave=()=>{idc.style.transform=''}}
+  B.innerHTML=`<div class="secgrid">
+    <div class="panel"><h3>القوى البشرية</h3><p class="sub">كما وردت في الكارت</p>
+      ${(c.staff||[]).length?`<div style="overflow-x:auto"><table class="stf" style="min-width:420px"><thead><tr><th>الفئة</th><th>الإجمالي</th><th>معين</th><th>متعاقد</th><th>فترات</th><th>فوق السن</th></tr></thead><tbody>${c.staff.map(s=>`<tr><td>${esc(s.cat)}</td><td>${esc(s.total||'—')}</td><td>${esc(s.app||'')}</td><td>${esc(s.con||'')}</td><td>${esc(s.per||'')}</td><td>${esc(s.over||'')}</td></tr>`).join('')}</tbody></table></div>`:'<p class="sub">لم يرد</p>'}
+    </div>
+    <div class="panel"><h3>التخصصات الموجودة</h3><p class="sub">الرقم = عدد عيادات الكشف في التخصص</p>
+      <div class="spl">${(c.specs||[]).length?c.specs.map(s=>{const n=int(s.count)||0;return `<span class="${n?'':'off'}">${esc(s.name)}${n?`<b>${n}</b>`:''}</span>`}).join(''):'—'}</div>
+      <h3 style="margin-top:18px">الفريق الإداري والطبي</h3>${kvRows(sec('team').rows)}
+    </div>
+    ${(c.sections||[]).filter(s=>s.id!=='team').map(s=>`<div class="panel"><h3>${esc(s.title)}</h3>${kvRows(s.rows)}</div>`).join('')}
+  </div>`;
+}
+
+/* ===================== PORTAL ===================== */
+function openPortal(hid){
+  if(!S.signed){loginView(true,'ادخل بحساب العيادة أو المدير عشان تحدّث البيانات');return}
+  if(!canEdit(hid)){return}
+  S.portal={hid,draft:JSON.parse(JSON.stringify(H(hid))),dirty:false,tab:'basic'};
+  if(location.hash!=='#portal')location.hash='#portal';else renderPortal();
+}
+const BASIC=[['name','اسم العيادة','t'],['type','نوع العيادة','t'],['region','المنطقة الطبية','r'],['attached','عدد المربوطين','n'],['daily','متوسط التردد اليومي','t'],['monthly','التردد الشهري','n'],['annual','التردد السنوي','n'],['phone','التليفون','t'],['address','العنوان','t'],['env','وصف البيئة المحيطة','t'],['urban','حضر / ريف','t'],['cats','الفئات المقدَّم لها الخدمة','w']];
+function renderPortal(){
+  const P=$('#portal'),p=S.portal;
+  if(!S.signed){P.innerHTML=`<div class="gate"><div class="eyebrow" style="justify-content:center">بوابة العيادات</div><h2>ادخل بحساب عيادتك</h2><p style="color:var(--mute);margin:0">كل عيادة ليها اسم مستخدم وكلمة سر من إدارة المنظومة. العرض نفسه متاح لأي حد من «لوحة الإدارة» و«كارت العيادة».</p><button class="btn pri" type="button" id="pIn">دخول</button></div>`;$('#pIn').onclick=()=>loginView(true);return}
+  if(!S.admin){if(!S.myCid||!H(S.myCid)){P.innerHTML=`<div class="gate"><h2>حسابك مش مربوط بعيادة</h2><p style="color:var(--mute);margin:0">كلّم إدارة المنظومة عشان تربط حسابك بعيادتك.</p></div>`;return}
+    if(p.hid!==S.myCid)S.portal=Object.assign(p,{hid:S.myCid,draft:JSON.parse(JSON.stringify(H(S.myCid))),dirty:false,tab:p.tab||'basic'})}
+  if(!p.hid||!H(p.hid)){
+    P.innerHTML=`<div class="view"><div class="headline"><div><div class="eyebrow">بوابة العيادات</div><h1>اختار العيادة</h1><p>حدّث كارت التعريف: الأرقام الأساسية، القوى البشرية، التخصصات والخدمات، والإدارة تشوف التحديث في نفس اللحظة.</p></div></div>
+    ${S.cl.length?`<div class="pick">${S.cl.map(c=>{const f=fresh(c);return `<button type="button" data-h="${esc(c.id)}" style="--c:${rc(c.region)}"><b>${esc(c.name)}</b><small>${esc(c.region||'')} · ${fmt(int(c.monthly))} متردد شهريًا</small><span class="pill ${f.c}">${esc(f.t)}</span></button>`}).join('')}</div>`:`<div class="empty">جارٍ تحميل العيادات…</div>`}</div>`;
+    P.onclick=e=>{const b=e.target.closest('.pick button');if(b)openPortal(b.dataset.h)};return;
+  }
+  const h=H(p.hid),f=fresh(h);
+  const tabs=[['basic','البيانات الأساسية'],['staff','القوى البشرية'],['specs','التخصصات'],...SEC_TITLES];
+  P.innerHTML=`<div class="view"><div class="headline"><div><div class="eyebrow">تحديث كارت العيادة</div><h1>${esc(h.name)}</h1><p>${esc(h.region||'')} · <span class="pill ${f.c}">${esc(f.t)}</span></p></div>${S.admin?'<button class="btn" type="button" id="pBack">← عيادة أخرى</button>':''}</div>
+   <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+     <div class="ptabs" role="tablist" id="ptabs">${tabs.map(([id,t])=>`<button type="button" role="tab" data-t="${id}" aria-selected="${p.tab===id}">${t}</button>`).join('')}</div>
+     <div id="pbody"></div>
+     <div class="savebar"><div class="msg" id="sMsg" aria-live="polite">عدّل البيانات ثم احفظ</div><button class="btn" type="button" id="undo">تراجع</button><button class="btn pri" type="button" id="save">حفظ وإرسال للإدارة</button></div>
+   </div></div>`;
+  P.onclick=null;
+  if($('#pBack'))$('#pBack').onclick=()=>{S.portal={hid:null};renderPortal()};
+  $('#ptabs').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;p.tab=b.dataset.t;$$('#ptabs button').forEach(x=>x.setAttribute('aria-selected',x===b));renderPBody()};
+  $('#undo').onclick=()=>{p.draft=JSON.parse(JSON.stringify(h));dirty(false);renderPBody()};
+  $('#save').onclick=savePortal;
+  renderPBody();
+}
+function dirty(v){S.portal.dirty=v;const m=$('#sMsg');if(m){m.className='msg';m.textContent=v?'فيه تعديلات لسه ما اتحفظتش':'عدّل البيانات ثم احفظ'}}
+function renderPBody(){
+  const p=S.portal,d=p.draft,B=$('#pbody');
+  if(!d.sections)d.sections=BLANK_SECTIONS();for(const [id,title] of SEC_TITLES)if(!d.sections.find(s=>s.id===id))d.sections.push({id,title,rows:[]});
+  if(p.tab==='basic'){
+    B.innerHTML=`<div class="fgrid">${BASIC.map(([k,l,t])=>`<label class="field ${t==='w'?'w':''}" for="b-${k}">${l}${t==='r'?`<select class="inp" id="b-${k}" data-k="${k}" ${S.admin?'':'disabled'}>${REGS.map(r=>`<option${r===d[k]?' selected':''}>${r}</option>`).join('')}</select>`:t==='w'?`<textarea class="inp" id="b-${k}" data-k="${k}" rows="2">${esc(d[k]||'')}</textarea>`:`<input class="inp ${t==='n'?'num':''}" id="b-${k}" data-k="${k}" ${t==='n'?'inputmode="numeric"':''} value="${esc(d[k]==null?'':d[k])}">`}</label>`).join('')}</div>
+    <p class="sub" style="margin:0">عدد الأطباء والصيادلة والتمريض بيتحسب تلقائيًا من تبويب «القوى البشرية». أدوار المبنى وغرفه بتتعدل من تبويب «المبنى والبنية التحتية» وبتظهر في المبنى ثلاثي الأبعاد.</p>`;
+    B.oninput=e=>{const k=e.target.dataset.k;if(!k)return;const t=(BASIC.find(x=>x[0]===k)||[])[2];d[k]=t==='n'?(e.target.value.trim()===''?null:int(e.target.value)):e.target.value;dirty(true)};B.onclick=null;return;
+  }
+  if(p.tab==='staff'){const F=['cat','total','app','con','per','over'];
+    B.innerHTML=`<div class="erows"><div class="er staff hdr"><span>الفئة</span><span>الإجمالي</span><span>معين</span><span>متعاقد</span><span>فترات</span><span>فوق السن</span><span></span></div>${(d.staff||[]).map((s,i)=>`<div class="er staff">${F.map(f=>`<input class="inp ${f==='cat'?'':'n'}" data-i="${i}" data-f="${f}" value="${esc(s[f]||'')}" aria-label="${f}">`).join('')}<button class="del" type="button" data-del="${i}" aria-label="حذف">×</button></div>`).join('')}</div><div class="row"><button class="btn sm" type="button" id="addR">+ إضافة فئة</button></div>`;
+    B.oninput=e=>{const i=+e.target.dataset.i,f=e.target.dataset.f;if(!f)return;d.staff[i][f]=e.target.value;dirty(true)};
+    B.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='addR'){(d.staff=d.staff||[]).push({cat:'',total:'',app:'',con:'',per:'',over:''});dirty(true);renderPBody()}else if(b.dataset.del!=null){d.staff.splice(+b.dataset.del,1);dirty(true);renderPBody()}};return}
+  if(p.tab==='specs'){const F=['name','count','cons','spec'];
+    B.innerHTML=`<div class="erows"><div class="er spec hdr"><span>التخصص</span><span>عدد العيادات</span><span>استشاري</span><span>أخصائي</span><span></span></div>${(d.specs||[]).map((s,i)=>`<div class="er spec">${F.map(f=>`<input class="inp ${f==='name'?'':'n'}" data-i="${i}" data-f="${f}" value="${esc(s[f]==null?'':s[f])}" aria-label="${f}">`).join('')}<button class="del" type="button" data-del="${i}" aria-label="حذف">×</button></div>`).join('')}</div><div class="row"><button class="btn sm" type="button" id="addR">+ إضافة تخصص</button></div>`;
+    B.oninput=e=>{const i=+e.target.dataset.i,f=e.target.dataset.f;if(!f)return;d.specs[i][f]=f==='count'?(int(e.target.value)||0):e.target.value;dirty(true)};
+    B.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='addR'){(d.specs=d.specs||[]).push({name:'',count:0,cons:'',spec:''});dirty(true);renderPBody()}else if(b.dataset.del!=null){d.specs.splice(+b.dataset.del,1);dirty(true);renderPBody()}};return}
+  const s=d.sections.find(x=>x.id===p.tab);
+  B.innerHTML=`<p class="sub" style="margin:0">اكتب البند وقيمته زي ما بتكتبه في الكارت. البند اللي من غير قيمة بيظهر كعنوان فرعي.${p.tab==='bld'?' بنود «الدور …» بتتحول لأدوار وغرف في المبنى ثلاثي الأبعاد، افصل بين الغرف بشرطة (-).':''}</p><div class="erows"><div class="er kvr hdr"><span>البند</span><span>القيمة</span><span></span></div>${s.rows.map((r,i)=>`<div class="er kvr"><input class="inp" data-i="${i}" data-f="k" value="${esc(r.k)}" aria-label="البند"><textarea class="inp" rows="1" data-i="${i}" data-f="v" aria-label="القيمة">${esc(r.v)}</textarea><button class="del" type="button" data-del="${i}" aria-label="حذف">×</button></div>`).join('')}</div><div class="row"><button class="btn sm" type="button" id="addR">+ إضافة بند</button></div>`;
+  B.oninput=e=>{const i=+e.target.dataset.i,f=e.target.dataset.f;if(!f)return;s.rows[i][f]=e.target.value;dirty(true)};
+  B.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='addR'){s.rows.push({k:'',v:''});dirty(true);renderPBody()}else if(b.dataset.del!=null){s.rows.splice(+b.dataset.del,1);dirty(true);renderPBody()}};
+}
+async function savePortal(){
+  const p=S.portal,h=H(p.hid),m=$('#sMsg'),btn=$('#save');if(!h||!fdb)return;
+  const d=p.draft;if(!String(d.name||'').trim()){m.className='msg err';m.textContent='اسم العيادة مطلوب';return}
+  btn.disabled=true;m.className='msg';m.textContent='جارٍ الحفظ…';
+  const at=new Date().toISOString();const doc=JSON.parse(JSON.stringify(d));
+  doc.staff=(doc.staff||[]).filter(s=>String(s.cat||'').trim());doc.specs=(doc.specs||[]).filter(s=>String(s.name||'').trim());
+  doc.sections=(doc.sections||[]).map(s=>({id:s.id,title:s.title,rows:(s.rows||[]).filter(r=>String(r.k||'').trim()||String(r.v||'').trim())}));
+  if(!S.admin)doc.region=h.region;
+  Object.assign(doc,derive(doc),{updatedAt:at,updatedBy:S.uid,id:h.id});
+  const changes=[];const bd=derive(h);
+  for(const [k,l] of [['monthly','التردد الشهري'],['attached','المربوطين'],['doctors','الأطباء'],['nurses','التمريض']]){const a=k in bd?bd[k]:h[k],b=doc[k];if(String(a??'')!==String(b??''))changes.push(`${l} ${fmt(int(a))}←${fmt(int(b))}`)}
+  try{
+    if(S.fromSeed&&S.admin)await importSeed();
+    await fdb.collection('clinics').doc(h.id).set(doc);
+    fdb.collection('clinicLog').add({hid:h.id,hname:doc.name,at,by:S.uid,byLabel:S.admin?'من الإدارة':'من العيادة',summary:changes.length?changes.join(' · '):'تحديث بيانات الكارت'}).catch(()=>{});
+    p.dirty=false;m.className='msg ok';m.textContent='اتحفظ واتبعت للإدارة ✓';
+  }catch(e){m.className='msg err';m.textContent=e&&e.code==='permission-denied'?'حسابك مش مسموح له يعدّل العيادة دي':'ماقدرناش نحفظ دلوقتي، حاول تاني'}
+  btn.disabled=false;
+}
+
+/* ===================== ROUTING & BOOT ===================== */
+function route(){
+  let v=(location.hash||'').slice(1);if(!['dashboard','card','portal'].includes(v))v='dashboard';
+  S.view=v;$$('.view[id^="v-"]').forEach(s=>s.hidden=s.id!=='v-'+v);
+  $$('#tabs a').forEach(a=>{if(a.dataset.v===v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
+  stopTour();
+  if(v==='dashboard'){mountStage('slot-dash');STG.key=null;refreshStage(true)}
+  if(v==='card'){renderCard();mountStage('slot-card');STG.key=null;refreshStage(true)}
+  if(v==='portal')renderPortal();
+  window.scrollTo({top:0});
+}
+window.addEventListener('hashchange',route);
+function onClinics(list){
+  S.cl=list.sort((a,b)=>(+a.order||0)-(+b.order||0));S.loaded=true;
+  if(!S.sel||!H(S.sel))S.sel=(S.cl[0]||{}).id||null;
+  renderDashboard();
+  if(S.view==='card'){renderCard();refreshStage(false)}
+  if(S.view==='dashboard')refreshStage(false);
+  if(S.view==='portal'&&!S.portal.dirty){if(S.portal.hid&&H(S.portal.hid))S.portal.draft=JSON.parse(JSON.stringify(H(S.portal.hid)));renderPortal()}
+}
+async function importSeed(){
+  const b=$('#seedBtn');if(b){b.disabled=true;b.textContent='جارٍ الحفظ…'}
+  try{const bt=fdb.batch();(window.CLINICS_SEED||[]).forEach(c=>bt.set(fdb.collection('clinics').doc(c.id),c));await bt.commit();S.fromSeed=false}
+  catch(e){if(b){b.disabled=false;b.textContent='فشل الحفظ، حاول تاني'}}
+}
+const subs=[];function stopSubs(){while(subs.length)try{subs.pop()()}catch(e){}}
+function loginView(show,msg){const L=$('#login');L.hidden=!show;if(show){$('#lMsg').className='msg';$('#lMsg').textContent=msg||'';setTimeout(()=>$('#lEmail').focus(),60)}}
+function setSync(ok,t){const s=$('#sync');s.classList.toggle('live',ok);s.lastChild.textContent=t}
+function renderWho(auth){
+  const w=$('#who');[...w.children].forEach(c=>{if(c.id!=='sync')c.remove()});
+  if(!S.signed){w.insertAdjacentHTML('beforeend',`<span class="role">عرض عام</span><button class="btn sm pri" type="button" id="inBtn">دخول</button>`);$('#inBtn').onclick=()=>loginView(true);return}
+  const label=S.admin?'مدير النظام':(S.myCid&&H(S.myCid)?short(H(S.myCid)):'مستخدم');
+  w.insertAdjacentHTML('beforeend',`<span class="role ${S.admin?'admin':''}">${esc(label)}</span><span dir="ltr">${esc(showUser(S.email))}</span><button class="btn sm" type="button" id="outBtn">خروج</button>`);
+  $('#outBtn').onclick=()=>auth.signOut();
+}
+async function boot(){
+  const sp=$('#splash');const hide=()=>sp.classList.add('gone');sp.onclick=hide;setTimeout(hide,reduce?10:3400);
+  $('#aboutBtn').onclick=()=>{$('#about').hidden=false;$('#aboutClose').focus()};
+  $('#aboutClose').onclick=()=>$('#about').hidden=true;$('#about').onclick=e=>{if(e.target.id==='about')$('#about').hidden=true};
+  $('#login').onclick=e=>{if(e.target.id==='login')loginView(false)};$('#lClose').onclick=()=>loginView(false);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#about').hidden=true;loginView(false)}});
+  route();
+  if(!window.firebase||!window.FIREBASE_CONFIG){setSync(false,'عرض من الكروت');S.fromSeed=true;onClinics(JSON.parse(JSON.stringify(window.CLINICS_SEED||[])));renderWho({signOut(){}});return}
+  firebase.initializeApp(window.FIREBASE_CONFIG);fdb=firebase.firestore();const auth=firebase.auth();
+  $('#lForm').onsubmit=async e=>{e.preventDefault();const m=$('#lMsg'),b=$('#lBtn');m.className='msg';m.textContent='جارٍ الدخول…';b.disabled=true;
+    try{await auth.signInWithEmailAndPassword(toEmail($('#lEmail').value),$('#lPass').value)}catch(err){m.className='msg err';m.textContent='اسم المستخدم أو كلمة السر غلط'}b.disabled=false};
+  $('#gBtn').onclick=async()=>{const m=$('#lMsg');m.className='msg';m.textContent='';try{await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())}catch(e){if(e.code!=='auth/popup-closed-by-user'&&e.code!=='auth/cancelled-popup-request'){m.className='msg err';m.textContent='ماقدرناش ندخل بجوجل ('+(e.code||'خطأ')+')'}}};
+  $('#lReset').onclick=async()=>{const v=$('#lEmail').value.trim(),m=$('#lMsg');if(!v.includes('@')){m.className='msg err';m.textContent='اكتب الإيميل الحقيقي. حسابات اسم المستخدم يغيّر كلمة سرها المدير.';return}
+    try{await auth.sendPasswordResetEmail(v);m.className='msg ok';m.textContent='بعتنا لينك تغيير كلمة السر على الإيميل'}catch(e){m.className='msg err';m.textContent='ماقدرناش نبعت اللينك'}};
+  const tm=setTimeout(()=>{if(!S.loaded){S.fromSeed=true;onClinics(JSON.parse(JSON.stringify(window.CLINICS_SEED||[])));setSync(false,'عرض من الكروت')}},9000);
+  fdb.collection('clinics').onSnapshot(snap=>{clearTimeout(tm);S.dbOk=true;setSync(true,'متصل لحظيًا');
+      S.fromSeed=snap.empty&&(window.CLINICS_SEED||[]).length>0;
+      onClinics(S.fromSeed?JSON.parse(JSON.stringify(window.CLINICS_SEED)):snap.docs.map(d=>({...d.data(),id:d.id})))},
+    err=>{clearTimeout(tm);S.dbOk=false;S.fromSeed=true;onClinics(JSON.parse(JSON.stringify(window.CLINICS_SEED||[])));setSync(false,'عرض من الكروت')});
+  fdb.collection('clinicLog').orderBy('at','desc').limit(30).onSnapshot(snap=>{S.log=snap.docs.map(d=>d.data());renderLog()},()=>{});
+  auth.onAuthStateChanged(async u=>{
+    stopSubs();S.users=[];S.admin=false;S.myCid=null;S.uid=null;S.email='';S.signed=!!u;
+    if(u){loginView(false);S.uid=u.uid;S.email=(u.email||'').toLowerCase();
+      const byMail=!!u.emailVerified&&(window.ADMIN_EMAILS||[]).map(x=>String(x).toLowerCase()).includes(S.email);
+      let byDoc=false;try{byDoc=(await fdb.collection('admins').doc(u.uid).get()).exists}catch(e){}
+      S.admin=byMail||byDoc;
+      if(!S.admin){try{const d=await fdb.collection('clinicUsers').doc(u.uid).get();S.myCid=d.exists?d.data().cid:null}catch(e){}}
+      if(S.admin)subs.push(fdb.collection('clinicUsers').onSnapshot(snap=>{S.users=snap.docs.map(d=>({...d.data(),uid:d.id}));if(S.loaded)renderTools()},()=>{}));
+    }
+    renderWho(auth);
+    if(S.signed&&!S.admin&&S.myCid&&!location.hash)location.hash='#portal';
+    if(S.loaded){renderGrid();renderTools();if(S.view==='card')renderCard()}
+    if(S.view==='portal')renderPortal();
+  });
+}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(STG.ok&&S.loaded){STG.key=null;refreshStage(false)}});
+boot();
+})();
+</script>
+</body>
+</html>
