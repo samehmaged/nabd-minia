@@ -1,0 +1,1166 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="نبض الأسرّة — منظومة متابعة الطاقة الاستيعابية لمستشفيات المنيا. تصميم وتطوير د. سامح ماجد صابر">
+<meta name="author" content="د. سامح ماجد صابر">
+<meta name="theme-color" content="#07131b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='1' y='1' width='46' height='46' rx='13' fill='%230f2b38'/%3E%3Cpath d='M8 13h9l2-4 3 9 2-5h16' fill='none' stroke='%2356d9e8' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M9 33V21M9 29h30v4M14 29v-4a3 3 0 0 1 3-3h18a4 4 0 0 1 4 4v3' fill='none' stroke='%23e7f2f5' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<title>نبض الأسرّة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Aref+Ruqaa:wght@400;700&display=swap">
+<style>
+/* Layout: a hospital "control room" — sticky command bar, a live 3D ward as the centrepiece, data panels below. Single dark look, chosen on purpose (monitor glow). */
+:root{
+  color-scheme: dark;
+  --bg:#07131b; --bg2:#0a1a24; --panel:#0e212d; --panel2:#132c3a; --line:#1d3a4a; --line2:#2a5266;
+  --fg:#e7f2f5; --mute:#93b2bf; --dim:#5f7f8c;
+  --accent:#56d9e8; --accent-ink:#04222a;
+  --free:#3ddc97; --occ:#ff6b5b; --unk:#8aa3b0; --out:#41525c; --warn:#ffc35a;
+  --g-crit:#c792ff; --g-ward:#62b6ff; --g-er:#ffb454; --g-proc:#9be7ff; --g-dial:#4fd1c5; --g-day:#f78fb3;
+  --f-display:'Readex Pro','IBM Plex Sans Arabic',system-ui,sans-serif;
+  --f-body:'IBM Plex Sans Arabic','Readex Pro','Segoe UI',Tahoma,sans-serif;
+  --f-sign:'Aref Ruqaa','Amiri','Traditional Arabic',serif;
+  --r:14px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6;direction:rtl;
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(86,217,232,.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 30%, rgba(199,146,255,.07), transparent 60%),
+    linear-gradient(rgba(86,217,232,.035) 1px, transparent 1px) 0 0/100% 32px,
+    var(--bg);
+  min-height:100vh}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--bg2)}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.num{font-family:var(--f-display);font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;font-weight:600}
+.wrap{max-width:1360px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ===== command bar ===== */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:rgba(10,26,36,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:18px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--fg)}
+.brand svg{width:42px;height:42px;flex:none}
+.brand b{font-family:var(--f-display);font-size:22px;font-weight:700;letter-spacing:.5px;display:block;line-height:1.1}
+.brand small{display:block;color:var(--mute);font-size:12px;line-height:1.3}
+.tabs{display:flex;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:4px;margin-inline-start:auto;overflow-x:auto;max-width:100%}
+.tabs a{white-space:nowrap;text-decoration:none;color:var(--mute);padding:7px 16px;border-radius:999px;font-family:var(--f-display);font-size:14px;transition:.2s}
+.tabs a:hover{color:var(--fg)}
+.tabs a[aria-current="page"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute)}
+.who .role{border:1px solid var(--line2);border-radius:999px;padding:3px 10px;color:var(--fg)}
+.who .role.admin{border-color:rgba(199,146,255,.5);color:var(--g-crit)}
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--unk)}
+.sync.live i{background:var(--free);box-shadow:0 0 0 0 rgba(61,220,151,.6);animation:ping 2s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(61,220,151,.55)}70%{box-shadow:0 0 0 8px rgba(61,220,151,0)}100%{box-shadow:0 0 0 0 rgba(61,220,151,0)}}
+
+main{padding-block:26px 40px}
+.view{display:flex;flex-direction:column;gap:22px}
+.view[hidden]{display:none!important}
+.headline{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.headline h1{font-size:clamp(24px,3.2vw,36px);line-height:1.25}
+.headline p{margin:6px 0 0;color:var(--mute);max-width:62ch}
+.eyebrow{font-size:12px;letter-spacing:.12em;color:var(--accent);font-family:var(--f-display);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.eyebrow::before{content:"";width:22px;height:2px;background:var(--accent);border-radius:2px}
+
+/* ===== KPI strip ===== */
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.kpi{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden;min-width:0}
+.kpi .l{color:var(--mute);font-size:13px}
+.kpi .v{font-family:var(--f-display);font-size:30px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:var(--dim)}
+.kpi .bar{position:absolute;inset:auto 0 0 0;height:3px;background:var(--c,var(--accent));opacity:.8}
+.kpi svg.spark{position:absolute;left:10px;top:12px;width:70px;height:26px;opacity:.6}
+
+/* ===== stage ===== */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:stretch}
+.stage-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.stage-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.stage-head h3{font-size:15px;display:flex;align-items:center;gap:8px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:thin;padding-bottom:2px;min-width:0;flex:1 1 300px}
+.chip{flex:none;border:1px solid var(--line2);background:var(--bg2);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--mute);transition:.2s}
+.chip:hover{color:var(--fg);border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:rgba(86,217,232,.14);border-color:var(--accent);color:var(--fg)}
+.slot{position:relative;min-height:440px;flex:1}
+.slot.tall{min-height:min(72vh,720px)}
+#stage{position:absolute;inset:0;background:#06111a;overflow:hidden}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#stage canvas:active{cursor:grabbing}
+.hud{position:absolute;top:12px;right:12px;pointer-events:none;display:flex;flex-direction:column;gap:6px;max-width:70%}
+.hud .hn{font-family:var(--f-display);font-weight:600;font-size:18px;text-shadow:0 2px 12px #000}
+.hud .hs{font-size:12px;color:var(--mute)}
+.hud .sim{align-self:flex-start;background:rgba(255,195,90,.15);color:var(--warn);border:1px solid rgba(255,195,90,.4);border-radius:999px;padding:2px 10px;font-size:12px}
+.legend{position:absolute;bottom:10px;right:12px;left:12px;display:flex;gap:12px;flex-wrap:wrap;pointer-events:none;font-size:12px;color:var(--mute)}
+.legend span{display:inline-flex;align-items:center;gap:6px;background:rgba(6,17,26,.7);padding:3px 9px;border-radius:999px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.hint{position:absolute;bottom:10px;left:12px;font-size:11px;color:var(--dim);pointer-events:none}
+.stage-ctrl{position:absolute;top:12px;left:12px;display:flex;gap:6px;flex-wrap:wrap}
+.ibtn{background:rgba(10,26,36,.85);border:1px solid var(--line2);border-radius:10px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--fg);display:inline-flex;align-items:center;gap:6px}
+.ibtn:hover{border-color:var(--accent)}
+.ibtn[aria-pressed="true"]{border-color:var(--warn);color:var(--warn)}
+.flat{position:absolute;inset:0;overflow:auto;padding:56px 14px 44px;display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start}
+.flat .z{border:1px solid var(--line2);border-radius:10px;padding:8px;max-width:260px}
+.flat .z b{display:block;font-size:12px;margin-bottom:6px}
+.flat .dots{display:flex;flex-wrap:wrap;gap:3px}
+.flat .dots i{width:9px;height:14px;border-radius:2px}
+#tip{position:fixed;z-index:80;pointer-events:none;background:rgba(8,20,28,.95);border:1px solid var(--line2);border-radius:10px;padding:7px 11px;font-size:12.5px;line-height:1.5;transform:translate(-50%,-115%);white-space:nowrap}
+#tip b{font-family:var(--f-display)}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;min-width:0}
+.panel h3{font-size:16px;margin-bottom:4px}
+.panel .sub{color:var(--mute);font-size:13px;margin:0 0 12px}
+.dlist{display:flex;flex-direction:column;gap:6px;max-height:520px;overflow:auto;padding-inline-end:2px}
+.drow{display:grid;grid-template-columns:4px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--bg2);border:1px solid transparent;cursor:pointer;text-align:start;width:100%}
+.drow:hover{border-color:var(--line2)}
+.drow .c{height:28px;border-radius:3px}
+.drow .n{font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drow .n small{display:block;color:var(--dim);font-size:11.5px}
+.drow .q{font-family:var(--f-display);font-size:14px;font-variant-numeric:tabular-nums;color:var(--fg)}
+.occbar{height:4px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:4px}
+.occbar i{display:block;height:100%;background:var(--occ)}
+
+/* ===== hospital grid ===== */
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sec-h h2{font-size:22px}
+.sec-h p{margin:0;color:var(--mute);font-size:13px}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.hcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:transform .25s,border-color .25s;min-width:0}
+.hcard:hover{transform:translateY(-3px);border-color:var(--line2)}
+.hcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.hcard .top1{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.hcard h4{margin:0;font-family:var(--f-display);font-size:16px;font-weight:600;line-height:1.4}
+.hcard .meta{font-size:12px;color:var(--mute)}
+.ring{flex:none;width:58px;height:58px}
+.stack{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--line)}
+.stack i{display:block;height:100%}
+.hnums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.hnums div{background:var(--bg2);border-radius:10px;padding:6px 8px}
+.hnums b{display:block;font-family:var(--f-display);font-size:17px;font-variant-numeric:tabular-nums}
+.hnums span{font-size:11px;color:var(--mute)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;border-radius:999px;padding:2px 9px;border:1px solid var(--line2);color:var(--mute)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.ok{color:var(--free);border-color:rgba(61,220,151,.35)}
+.pill.mid{color:var(--warn);border-color:rgba(255,195,90,.35)}
+.pill.old{color:var(--occ);border-color:rgba(255,107,91,.35)}
+.pill.none{color:var(--unk)}
+.hcard .acts{display:flex;gap:8px;margin-top:auto}
+.btn{border:1px solid var(--line2);background:var(--bg2);border-radius:10px;padding:8px 14px;cursor:pointer;font-size:13.5px;font-family:var(--f-display);transition:.2s;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--occ);border-color:rgba(255,107,91,.4)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:6px 10px;font-size:12.5px}
+.facts{margin:0;padding:0;list-style:none;font-size:12.5px;color:var(--mute);display:flex;flex-direction:column;gap:3px}
+.facts li::before{content:"◆ ";color:var(--dim);font-size:9px}
+
+.two{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px}
+.bars{display:flex;flex-direction:column;gap:9px}
+.brow{display:grid;grid-template-columns:170px minmax(0,1fr) 48px;gap:10px;align-items:center;font-size:13px}
+.brow .bn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mute)}
+.brow .bt{height:16px;display:flex;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.03)}
+.brow .bt i{height:100%;transform-origin:right;animation:grow .9s cubic-bezier(.2,.8,.2,1) both}
+@keyframes grow{from{transform:scaleX(0)}}
+.brow .bv{font-family:var(--f-display);font-variant-numeric:tabular-nums;text-align:left}
+.axis{display:grid;grid-template-columns:170px minmax(0,1fr) 48px;gap:10px;font-size:11px;color:var(--dim)}
+.axis .ticks{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:4px}
+.keys{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--mute);margin-bottom:12px}
+.keys span{display:inline-flex;align-items:center;gap:6px}
+.keys i{width:10px;height:10px;border-radius:3px}
+.heat{overflow-x:auto}
+.heat table{border-collapse:separate;border-spacing:4px;width:100%;font-size:12px;min-width:520px}
+.heat th{font-weight:500;color:var(--mute);text-align:center;font-size:11.5px;padding:2px}
+.heat th.hn{text-align:right;white-space:nowrap;font-size:12px;color:var(--fg);max-width:170px;overflow:hidden;text-overflow:ellipsis}
+.heat td{text-align:center;border-radius:6px;padding:7px 2px;font-family:var(--f-display);font-variant-numeric:tabular-nums}
+.heat td.z{color:var(--dim);background:rgba(255,255,255,.025)}
+.log{display:flex;flex-direction:column;gap:2px;max-height:340px;overflow:auto}
+.lrow{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:10px;padding:9px 4px;border-bottom:1px dashed var(--line);font-size:13px;align-items:start}
+.lrow i{width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:7px}
+.lrow small{color:var(--dim);display:block}
+.lrow time{color:var(--mute);font-size:12px;white-space:nowrap}
+.empty{padding:22px;border:1px dashed var(--line2);border-radius:14px;color:var(--mute);text-align:center;font-size:14px}
+.minis{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.mini{background:var(--bg2);border-radius:12px;padding:10px 12px}
+.mini .ml{font-size:12px;color:var(--mute);min-height:2.6em}
+.mini .mv{font-family:var(--f-display);font-size:20px;font-variant-numeric:tabular-nums}
+.mini svg{width:100%;height:46px;display:block;margin-top:4px}
+
+/* ===== tools / forms ===== */
+.tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.tool{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.tool h4{margin:0;font-family:var(--f-display);font-size:15px;font-weight:600}
+.tool p{margin:0;font-size:12.5px;color:var(--mute)}
+.field{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--mute)}
+.inp,select.inp{background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;font-size:14px;width:100%;color:var(--fg)}
+.inp:focus{border-color:var(--accent);outline:none}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.msg{font-size:12.5px;min-height:1.2em}
+.msg.ok{color:var(--free)} .msg.err{color:var(--occ)}
+
+/* ===== portal ===== */
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.pick button{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:start;cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:.2s}
+.pick button:hover{border-color:var(--accent);transform:translateY(-2px)}
+.pick b{font-family:var(--f-display);font-size:15.5px}
+.pick small{color:var(--mute)}
+.gate{max-width:420px;margin:30px auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px;display:flex;flex-direction:column;gap:14px;text-align:center}
+.gate .pin{font-size:28px;letter-spacing:.5em;text-align:center;font-family:var(--f-display)}
+.editor{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
+.ed-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.ed-sum div{background:var(--bg2);border-radius:12px;padding:8px 10px}
+.ed-sum b{display:block;font-family:var(--f-display);font-size:22px;font-variant-numeric:tabular-nums}
+.ed-sum span{font-size:11.5px;color:var(--mute)}
+.etable{display:flex;flex-direction:column;gap:8px}
+.erow{display:grid;grid-template-columns:4px minmax(0,1.4fr) minmax(0,1fr) repeat(3,minmax(0,.9fr)) 54px 30px;gap:8px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:8px}
+.erow.hdr{background:none;border:none;padding:0 8px;font-size:11.5px;color:var(--dim)}
+.erow .c{height:100%;min-height:34px;border-radius:3px}
+.erow .inp{padding:6px 8px;font-size:13px}
+.step{display:flex;align-items:center;border:1px solid var(--line2);border-radius:10px;overflow:hidden;background:var(--bg)}
+.step button{border:0;background:none;width:26px;height:32px;cursor:pointer;color:var(--mute);font-size:16px;flex:none}
+.step button:hover{color:var(--fg);background:var(--panel2)}
+.step input{border:0;background:none;width:100%;min-width:0;text-align:center;font-family:var(--f-display);font-size:14px;padding:0;-moz-appearance:textfield}
+.step input::-webkit-outer-spin-button,.step input::-webkit-inner-spin-button{-webkit-appearance:none}
+.step.occ input{color:var(--occ)} .step.out input{color:var(--unk)}
+.erow .free{font-family:var(--f-display);text-align:center;color:var(--free);font-variant-numeric:tabular-nums}
+.erow .del{border:0;background:none;color:var(--dim);cursor:pointer;font-size:18px}
+.erow .del:hover{color:var(--occ)}
+.savebar{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:rgba(14,33,45,.95);backdrop-filter:blur(10px);border:1px solid var(--line2);border-radius:14px;padding:10px 14px;margin-top:12px}
+.savebar .msg{flex:1}
+.ed-stage{position:sticky;top:90px}
+.ed-stage .slot{min-height:460px;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+
+/* ===== signature ===== */
+.sign{border-top:1px solid var(--line);margin-top:20px;background:linear-gradient(180deg,transparent,rgba(86,217,232,.04))}
+.sign .wrap{padding-block:30px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.sign .by{display:flex;flex-direction:column;gap:2px}
+.sign .by span{font-size:12px;color:var(--mute);letter-spacing:.08em}
+.sign .by b{font-family:var(--f-sign);font-weight:700;font-size:clamp(28px,4vw,40px);line-height:1.3;background:linear-gradient(90deg,var(--accent),var(--g-crit));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sign svg{width:200px;height:40px}
+.sign .pulse path{stroke-dasharray:420;stroke-dashoffset:420;animation:draw 3.2s ease-in-out infinite}
+@keyframes draw{0%{stroke-dashoffset:420}55%{stroke-dashoffset:0}100%{stroke-dashoffset:-420}}
+.sign small{color:var(--dim);font-size:12px}
+
+/* ===== splash ===== */
+#splash{position:fixed;inset:0;z-index:100;background:radial-gradient(800px 500px at 50% 40%,#0d2a38,#050e14);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;transition:opacity .7s,visibility .7s;cursor:pointer}
+#splash.gone{opacity:0;visibility:hidden}
+#splash svg.ecg{width:min(560px,86vw);height:120px}
+#splash .ecg path{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1200;stroke-dashoffset:1200;animation:ecg 1.6s .2s cubic-bezier(.6,0,.3,1) forwards;filter:drop-shadow(0 0 8px rgba(86,217,232,.8))}
+@keyframes ecg{to{stroke-dashoffset:0}}
+#splash .t1{font-family:var(--f-display);font-size:clamp(38px,7vw,68px);font-weight:700;opacity:0;transform:translateY(14px);animation:rise .8s 1.2s forwards;letter-spacing:.04em}
+#splash .t2{color:var(--mute);opacity:0;animation:rise .8s 1.5s forwards;text-align:center;padding:0 16px}
+#splash .t3{font-family:var(--f-sign);font-size:clamp(22px,3.4vw,30px);color:var(--fg);opacity:0;animation:rise .9s 1.9s forwards}
+#splash .t3 em{font-style:normal;color:var(--dim);font-family:var(--f-body);font-size:13px;display:block;text-align:center;letter-spacing:.1em}
+#splash .skip{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom,0px));font-size:12px;color:var(--dim)}
+@keyframes rise{to{opacity:1;transform:none}}
+
+.modal{position:fixed;inset:0;z-index:90;background:rgba(3,9,13,.7);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal .box{background:var(--panel);border:1px solid var(--line2);border-radius:20px;max-width:620px;width:100%;padding:24px;max-height:86vh;overflow:auto}
+.modal h3{font-size:22px;margin-bottom:8px}
+.modal ul{padding-inline-start:20px;color:var(--mute);font-size:14px}
+
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.hero,.two,.editor{grid-template-columns:minmax(0,1fr)}.tools{grid-template-columns:minmax(0,1fr)}.ed-stage{position:relative;top:0}}
+@media (max-width:640px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi .v{font-size:24px}
+  .slot{min-height:360px}.slot.tall{min-height:440px}
+  .brow,.axis{grid-template-columns:96px minmax(0,1fr) 40px}
+  .erow{grid-template-columns:4px minmax(0,1fr) minmax(0,1fr);}
+  .erow .c{grid-row:span 3}
+  .erow.hdr{display:none}
+  .erow .free::before{content:"متاح "; color:var(--dim);font-size:11px}
+  .ed-sum{grid-template-columns:repeat(2,1fr)}
+  .tabs{margin-inline-start:0;width:100%}
+  .brand small{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="splash" role="presentation">
+  <svg class="ecg" viewBox="0 0 560 120" aria-hidden="true"><path d="M0 70 H150 l14 -8 l12 8 H210 l10 18 l16 -76 l18 96 l14 -38 H300 l14 -12 l16 12 H360 v-22 h120 v22 H560"/></svg>
+  <div class="t1">نبض الأسرّة</div>
+  <div class="t2">منظومة متابعة الطاقة الاستيعابية لمستشفيات محافظة المنيا</div>
+  <div class="t3"><em>فكرة وتصميم وتطوير</em>د. سامح ماجد صابر</div>
+  <div class="skip">اضغط للدخول</div>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#dashboard" aria-label="نبض الأسرّة">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <rect x="1" y="1" width="46" height="46" rx="13" fill="#0f2b38" stroke="#2a5266"/>
+        <path d="M9 31 v-12 M9 27 h30 v4 M14 27 v-4 a3 3 0 0 1 3-3 h18 a4 4 0 0 1 4 4 v3" fill="none" stroke="#e7f2f5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 13 h9 l2-4 l3 9 l2-5 h16" fill="none" stroke="#56d9e8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span><b>نبض الأسرّة</b><small>الطاقة الاستيعابية · مستشفيات المنيا</small></span>
+    </a>
+    <nav class="tabs" id="tabs" aria-label="أقسام المنظومة">
+      <a href="#dashboard" data-v="dashboard">لوحة الإدارة</a>
+      <a href="#ward" data-v="ward">الجناح الافتراضي 3D</a>
+      <a href="#portal" data-v="portal">بوابة المستشفيات</a>
+    </nav>
+    <div class="who" id="who"><span class="sync" id="sync"><i></i>جارٍ الاتصال</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ============ DASHBOARD ============ -->
+  <section class="view" id="v-dashboard" aria-label="لوحة الإدارة">
+    <div class="headline">
+      <div>
+        <div class="eyebrow">غرفة المتابعة المركزية</div>
+        <h1>الطاقة الاستيعابية لمستشفيات المنيا</h1>
+        <p>كل مستشفى يحدّث أسرّته من بوابته، والإدارة تشوف الصورة كاملة لحظيًا: السعة، الإشغال، الرعايات الحرجة، ومين حدّث إمتى.</p>
+      </div>
+      <button class="btn" id="aboutBtn" type="button">عن المنظومة</button>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="hero">
+      <div class="stage-card">
+        <div class="stage-head">
+          <h3>الجناح الافتراضي</h3>
+          <div class="chips" id="chips-dash" role="group" aria-label="اختر المستشفى"></div>
+        </div>
+        <div class="slot" id="slot-dash"></div>
+      </div>
+      <aside class="panel">
+        <h3 id="dp-title">الأقسام</h3>
+        <p class="sub" id="dp-sub">اضغط على قسم لتنتقل الكاميرا إليه</p>
+        <div class="dlist" id="dp-list"></div>
+      </aside>
+    </div>
+
+    <div class="sec-h"><h2>المستشفيات</h2><p id="hg-sub"></p></div>
+    <div class="hgrid" id="hgrid"></div>
+
+    <div class="two">
+      <div class="panel">
+        <h3>توزيع الأسرّة حسب الفئة</h3>
+        <p class="sub">الأسرّة فقط، بدون غرف العمليات وماكينات الغسيل الكلوي</p>
+        <div class="keys" id="bar-keys"></div>
+        <div class="bars" id="bars"></div>
+      </div>
+      <div class="panel">
+        <h3>خريطة الرعايات الحرجة</h3>
+        <p class="sub">عدد الأسرّة في كل نوع رعاية بكل مستشفى</p>
+        <div class="heat" id="heat"></div>
+      </div>
+    </div>
+
+    <div class="two">
+      <div class="panel" id="monthly"></div>
+      <div class="panel">
+        <h3>سجل التحديثات</h3>
+        <p class="sub">آخر ما أرسلته المستشفيات</p>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="tools-panel">
+      <h3>أدوات مدير النظام</h3>
+      <p class="sub">حسابات المستشفيات، إضافة مستشفى، والتصدير</p>
+      <div class="tools" id="tools"></div>
+    </div>
+  </section>
+
+  <!-- ============ WARD ============ -->
+  <section class="view" id="v-ward" hidden aria-label="الجناح الافتراضي">
+    <div class="headline">
+      <div>
+        <div class="eyebrow">عرض ثلاثي الأبعاد</div>
+        <h1 id="ward-title">الجناح الافتراضي</h1>
+        <p>كل سرير مرسوم بحالته: أخضر متاح، أحمر مشغول، رمادي لسه ما اتبلّغش، داكن خارج الخدمة. اسحب للدوران، ومرّر للتقريب، أو ابدأ جولة.</p>
+      </div>
+    </div>
+    <div class="stage-card">
+      <div class="stage-head"><div class="chips" id="chips-ward" role="group" aria-label="اختر المستشفى"></div></div>
+      <div class="hero" style="grid-template-columns:minmax(0,1fr) 300px;gap:0">
+        <div class="slot tall" id="slot-ward"></div>
+        <aside class="panel" style="border-radius:0;border-width:0 1px 0 0">
+          <h3 id="wp-title">الأقسام</h3>
+          <p class="sub" id="wp-sub"></p>
+          <div class="dlist" id="wp-list" style="max-height:620px"></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PORTAL ============ -->
+  <section class="view" id="v-portal" hidden aria-label="بوابة المستشفيات">
+    <div id="portal"></div>
+  </section>
+</main>
+
+<footer class="sign">
+  <div class="wrap">
+    <div class="by"><span>فكرة وتصميم وتطوير</span><b>د. سامح ماجد صابر</b><small>منظومة «نبض الأسرّة» · بيانات مستندات المستشفيات المقدَّمة · ٢٠٢٦</small></div>
+    <svg class="pulse" viewBox="0 0 200 40" aria-hidden="true"><path d="M0 22 H60 l6 -4 l6 4 H90 l5 8 l8 -28 l9 34 l7 -14 H140 l6 -5 l7 5 H200" fill="none" stroke="#56d9e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+</footer>
+
+<div class="modal" id="login" hidden role="dialog" aria-modal="true" aria-labelledby="l-h" style="z-index:95;background:radial-gradient(800px 500px at 50% 30%,#0d2a38,#050e14)">
+  <form class="box" id="lForm" style="max-width:420px;display:flex;flex-direction:column;gap:12px">
+    <div class="eyebrow">دخول المنظومة</div>
+    <h3 id="l-h" style="margin:0">نبض الأسرّة</h3>
+    <p style="color:var(--mute);margin:0;font-size:13.5px">مدير النظام يشوف كل المستشفيات، وكل مستشفى يدخل بحسابه ويحدّث بياناته.</p>
+    <label class="field" for="lEmail">الإيميل<input class="inp" id="lEmail" type="email" dir="ltr" autocomplete="username" required></label>
+    <label class="field" for="lPass">كلمة السر<input class="inp" id="lPass" type="password" dir="ltr" autocomplete="current-password" required></label>
+    <div class="msg" id="lMsg" aria-live="polite"></div>
+    <button class="btn pri" id="lBtn" type="submit">دخول</button>
+    <div class="row" style="align-items:center;gap:10px;color:var(--dim);font-size:12px"><span style="flex:1;height:1px;background:var(--line)"></span>أو<span style="flex:1;height:1px;background:var(--line)"></span></div>
+    <button class="btn" id="gBtn" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>الدخول بحساب جوجل</button>
+    <button class="btn sm" type="button" id="lReset">نسيت كلمة السر</button>
+    <p style="font-family:var(--f-sign);font-size:20px;margin:6px 0 0;text-align:center;color:var(--mute)">تصميم وتطوير د. سامح ماجد صابر</p>
+  </form>
+</div>
+<div id="tip" hidden></div>
+<div id="park" hidden></div>
+<div class="modal" id="about" hidden role="dialog" aria-modal="true" aria-labelledby="about-h">
+  <div class="box">
+    <h3 id="about-h">عن «نبض الأسرّة»</h3>
+    <p style="color:var(--mute);margin-top:0">منظومة تفاعلية لمتابعة الطاقة الاستيعابية والإشغال في مستشفيات المنيا، مبنية من بيانات المستندات اللي قدمتها المستشفيات.</p>
+    <ul>
+      <li>بوابة لكل مستشفى يدخلها بحساب خاص بيه، ويحدّث منها السعة والإشغال والأسرّة المعطلة.</li>
+      <li>لوحة إدارة تجمع كل المستشفيات لحظيًا، مع سجل يوضح مين حدّث وإمتى.</li>
+      <li>جناح افتراضي ثلاثي الأبعاد يرسم كل سرير وحضّانة وكرسي غسيل وغرفة عمليات بحالته.</li>
+      <li>خريطة للرعايات الحرجة ومقارنة بين المستشفيات وتصدير البيانات لملف Excel.</li>
+    </ul>
+    <p style="color:var(--mute);font-size:13px">المصادر: بيانات 10 مستشفيات من ملفات Word وExcel وPDF. أرقام الإشغال تبدأ فارغة لحد ما كل مستشفى يبلّغ بنفسه.</p>
+    <p style="font-family:var(--f-sign);font-size:26px;margin:10px 0 0;color:var(--fg)">د. سامح ماجد صابر</p>
+    <div class="row" style="justify-content:flex-end"><button class="btn pri" type="button" id="aboutClose">تمام</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script src="seed.js"></script>
+<script>
+(function(){
+"use strict";
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>n==null||isNaN(n)?'—':Number(n).toLocaleString('en-US');
+const pct=r=>r==null?'—':Math.round(r*100)+'%';
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ss={get(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set(k,v){try{sessionStorage.setItem(k,v)}catch(e){}}};
+
+const GROUPS={
+  er:{n:'الطوارئ',c:'#ffb454'}, crit:{n:'الرعايات الحرجة',c:'#c792ff'}, proc:{n:'العمليات والإفاقة',c:'#9be7ff'},
+  ward:{n:'الأقسام الداخلية',c:'#62b6ff'}, day:{n:'اليوم الواحد والجرعات',c:'#f78fb3'}, dial:{n:'الغسيل الكلوي',c:'#4fd1c5'}
+};
+const GORDER=['er','crit','proc','ward','day','dial'];
+const TYPES={
+  icu:{n:'رعاية مركزة',g:'crit',k:'bed'}, inter:{n:'رعاية متوسطة',g:'crit',k:'bed'}, ccu:{n:'رعاية قلب',g:'crit',k:'bed'},
+  stroke:{n:'سكتة دماغية',g:'crit',k:'bed'}, picu:{n:'رعاية أطفال',g:'crit',k:'bed'}, nicu:{n:'حضانات/مبتسرين',g:'crit',k:'inc'},
+  care:{n:'رعاية تخصصية أخرى',g:'crit',k:'bed'}, ward:{n:'قسم داخلي',g:'ward',k:'bed'}, iso:{n:'عزل',g:'ward',k:'bed'},
+  er:{n:'طوارئ',g:'er',k:'bed'}, or:{n:'غرفة عمليات',g:'proc',k:'room'}, rec:{n:'إفاقة/تحضير',g:'proc',k:'bed'},
+  dial:{n:'غسيل كلوي',g:'dial',k:'chair'}, day:{n:'اليوم الواحد/جرعات',g:'day',k:'chair'}
+};
+const HEATCOLS=[['icu','مركزة'],['inter','متوسطة'],['ccu','قلب'],['stroke','سكتة'],['picu','أطفال'],['nicu','حضانات'],['care','أخرى']];
+const ST={free:'#3ddc97',occ:'#ff6b5b',unk:'#8aa3b0',out:'#3a4a54'};
+const ST_N={free:'متاح',occ:'مشغول',unk:'لم يُبلَّغ',out:'خارج الخدمة'};
+const T=t=>TYPES[t]||TYPES.ward;
+
+function stats(h,simOn){
+  const s={beds:0,crit:0,nicu:0,dial:0,rooms:0,er:0,repCap:0,occ:0,out:0,byG:{},byT:{}};
+  for(const d of (h.depts||[])){
+    const ty=T(d.t),cap=Math.max(0,+d.cap||0),occ=simOn?simOcc(h,d):d.occ;
+    s.byT[d.t]=(s.byT[d.t]||0)+cap;
+    if(ty.k==='room'){s.rooms+=cap;continue}
+    if(ty.g==='dial'){s.dial+=cap;continue}
+    s.beds+=cap; s.byG[ty.g]=(s.byG[ty.g]||0)+cap;
+    if(ty.g==='crit')s.crit+=cap; if(d.t==='nicu')s.nicu+=cap; if(ty.g==='er')s.er+=cap;
+    if(occ!=null&&occ!==''){s.repCap+=cap;s.occ+=Math.min(+occ,cap)} s.out+=Math.min(+d.out||0,cap);
+  }
+  s.rate=s.repCap?s.occ/s.repCap:null; return s;
+}
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function simOcc(h,d){const r=(hashStr(h.id+d.id)%1000)/1000;const cap=+d.cap||0;return Math.round(cap*(.42+r*.53))}
+function rel(iso){
+  if(!iso)return null; const m=(Date.now()-Date.parse(iso))/6e4;
+  if(m<1)return 'الآن'; if(m<60)return `منذ ${Math.round(m)} دقيقة`; const h=m/60; if(h<24)return `منذ ${Math.round(h)} ساعة`;
+  const d=h/24; if(d<30)return `منذ ${Math.round(d)} يوم`; return new Date(iso).toLocaleDateString('ar-EG');
+}
+function fresh(h){
+  if(!h.updatedAt)return {c:'none',t:'من المستندات · لم يُحدَّث بعد'};
+  const d=(Date.now()-Date.parse(h.updatedAt))/864e5;
+  if(d<1)return {c:'ok',t:'محدّث '+rel(h.updatedAt)}; if(d<7)return {c:'mid',t:'آخر تحديث '+rel(h.updatedAt)};
+  return {c:'old',t:'يحتاج تحديث · '+rel(h.updatedAt)};
+}
+const pinHash=(hid,pin)=>'p'+hashStr('nabd|'+hid+'|'+pin).toString(36)+hashStr(pin+'|'+hid+'|minia').toString(36);
+
+/* ---------- state ---------- */
+const S={hosp:[],log:[],pins:{},sel:null,view:'dashboard',admin:true,canWrite:null,uid:null,sim:false,loaded:false,dbOk:null,
+  portal:{hid:null,draft:null,dirty:false},names:{},users:[],myHid:null,email:''};
+let fdb=null;
+const H=id=>S.hosp.find(h=>h.id===id);
+
+/* ======================================================================
+   3D STAGE (three.js)
+   ====================================================================== */
+const STG={ok:false,units:[],zones:[],picks:[],meshes:[],anim:null,visible:true,lastUser:0,tour:null,hid:null};
+const CELL={bed:{w:1.75,d:3.0},inc:{w:1.3,d:1.45},chair:{w:1.9,d:1.9},room:{w:3.6,d:3.6}};
+function stageHTML(){
+  return `<div id="stage"><canvas aria-label="عرض ثلاثي الأبعاد للأسرّة"></canvas>
+  <div class="hud"><div class="hn" id="hud-n"></div><div class="hs" id="hud-s"></div><div class="sim" id="hud-sim" hidden>محاكاة إشغال للعرض فقط · ليست بيانات حقيقية</div></div>
+  <div class="stage-ctrl">
+    <button class="ibtn" type="button" id="b-tour">▶ جولة</button>
+    <button class="ibtn" type="button" id="b-reset">⟲ عرض كامل</button>
+    <button class="ibtn" type="button" id="b-sim" aria-pressed="false">محاكاة الإشغال</button>
+  </div>
+  <div class="legend"><span><i style="background:${ST.free}"></i>متاح</span><span><i style="background:${ST.occ}"></i>مشغول</span><span><i style="background:${ST.unk}"></i>لم يُبلَّغ</span><span><i style="background:${ST.out}"></i>خارج الخدمة</span></div>
+  </div>`;
+}
+function mountStage(slotId){
+  const slot=document.getElementById(slotId); if(!slot)return;
+  let st=$('#stage'); if(!st&&!STG.inited){STG.inited=true;slot.insertAdjacentHTML('beforeend',stageHTML());st=$('#stage');bindStageUI();stageInit()}
+  else if(st.parentElement!==slot)slot.appendChild(st);
+  requestAnimationFrame(resizeStage);
+}
+function bindStageUI(){
+  $('#b-tour').onclick=()=>{STG.tour?stopTour():startTour()};
+  $('#b-reset').onclick=()=>{stopTour();fitAll()};
+  $('#b-sim').onclick=()=>{S.sim=!S.sim;$('#b-sim').setAttribute('aria-pressed',S.sim);refreshStage(false)};
+}
+function stageInit(){
+  const canvas=$('#stage canvas');
+  if(!window.THREE){flatFallback();return}
+  try{
+    STG.r=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+  }catch(e){flatFallback();return}
+  STG.ok=true;
+  _m=new THREE.Matrix4();_q=new THREE.Quaternion();_e=new THREE.Euler();_p=new THREE.Vector3();_s=new THREE.Vector3();_c=new THREE.Color();
+  const r=STG.r; r.setPixelRatio(Math.min(devicePixelRatio||1,2)); r.setClearColor(0x06111a,1);
+  r.outputEncoding=THREE.sRGBEncoding; r.shadowMap.enabled=false;
+  const sc=STG.scene=new THREE.Scene(); sc.fog=new THREE.Fog(0x06111a,45,150);
+  STG.cam=new THREE.PerspectiveCamera(40,1,.1,500);
+  sc.add(new THREE.HemisphereLight(0xa8dcff,0x08141c,.5));
+  const dl=new THREE.DirectionalLight(0xffffff,.85); dl.position.set(-18,40,22); sc.add(dl);
+  const dl2=new THREE.DirectionalLight(0x56d9e8,.35); dl2.position.set(25,12,-20); sc.add(dl2);
+  const gnd=new THREE.Mesh(new THREE.PlaneGeometry(600,600),new THREE.MeshStandardMaterial({color:0x040b10,roughness:1,metalness:0}));
+  gnd.rotation.x=-Math.PI/2; gnd.position.y=-.02; sc.add(gnd);
+  const grid=new THREE.GridHelper(300,150,0x1d4a5c,0x0f2a38); grid.material.transparent=true; grid.material.opacity=.45; sc.add(grid);
+  // particles
+  const pg=new THREE.BufferGeometry(),N=260,pa=new Float32Array(N*3);
+  for(let i=0;i<N;i++){pa[i*3]=(Math.random()-.5)*120;pa[i*3+1]=Math.random()*26;pa[i*3+2]=(Math.random()-.5)*120}
+  pg.setAttribute('position',new THREE.BufferAttribute(pa,3));
+  STG.parts=new THREE.Points(pg,new THREE.PointsMaterial({color:0x56d9e8,size:.14,transparent:true,opacity:.55,depthWrite:false}));
+  sc.add(STG.parts);
+  // scan sweep
+  const sc2=document.createElement('canvas');sc2.width=256;sc2.height=4;const g2=sc2.getContext('2d');
+  const gr=g2.createLinearGradient(0,0,256,0);gr.addColorStop(0,'rgba(86,217,232,0)');gr.addColorStop(.85,'rgba(86,217,232,.55)');gr.addColorStop(1,'rgba(86,217,232,0)');
+  g2.fillStyle=gr;g2.fillRect(0,0,256,4);
+  STG.scan=new THREE.Mesh(new THREE.PlaneGeometry(6,1),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc2),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+  STG.scan.rotation.x=-Math.PI/2; STG.scan.position.y=.06; sc.add(STG.scan);
+  STG.world=new THREE.Group(); sc.add(STG.world);
+  // shared geometry/materials
+  STG.G={box:new THREE.BoxGeometry(1,1,1),sph:new THREE.SphereGeometry(.5,18,12),cyl:new THREE.CylinderGeometry(.5,.5,1,28),pl:new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2)};
+  const hc=document.createElement('canvas');hc.width=hc.height=128;const hg=hc.getContext('2d');
+  const rg=hg.createRadialGradient(64,64,4,64,64,64);rg.addColorStop(0,'rgba(255,255,255,1)');rg.addColorStop(.5,'rgba(255,255,255,.35)');rg.addColorStop(1,'rgba(255,255,255,0)');
+  hg.fillStyle=rg;hg.fillRect(0,0,128,128);
+  STG.M={
+    metal:new THREE.MeshStandardMaterial({color:0x3a5566,metalness:.55,roughness:.35}),
+    base:new THREE.MeshStandardMaterial({color:0x1a2a34,metalness:.3,roughness:.6}),
+    linen:new THREE.MeshStandardMaterial({color:0xe9f1f4,roughness:.85}),
+    glow:new THREE.MeshBasicMaterial({color:0xffffff}),
+    blanket:new THREE.MeshStandardMaterial({color:0xffffff,roughness:.75}),
+    skin:new THREE.MeshStandardMaterial({color:0xd8b392,roughness:.7}),
+    glass:new THREE.MeshStandardMaterial({color:0xbff3ff,transparent:true,opacity:.2,roughness:.05,metalness:.1,depthWrite:false}),
+    halo:new THREE.MeshBasicMaterial({color:0xffffff,map:new THREE.CanvasTexture(hc),transparent:true,opacity:.32,blending:THREE.AdditiveBlending,depthWrite:false})
+  };
+  STG.O={th:-.75,ph:.92,r:50,tx:0,ty:0,tz:0}; STG.Og={...STG.O};
+  STG.ray=new THREE.Raycaster(); STG.mouse=new THREE.Vector2();
+  bindOrbit(canvas);
+  new ResizeObserver(resizeStage).observe($('#stage'));
+  document.addEventListener('visibilitychange',()=>{STG.visible=!document.hidden});
+  STG.clock=new THREE.Clock();
+  loop();
+}
+function flatFallback(){STG.ok=false;$('#stage canvas').hidden=true;['b-tour','b-reset'].forEach(i=>$('#'+i).hidden=true)}
+function resizeStage(){
+  const st=$('#stage');if(!st||!STG.ok)return;const w=st.clientWidth,h=st.clientHeight;if(!w||!h)return;
+  STG.r.setSize(w,h,false);STG.cam.aspect=w/h;STG.cam.updateProjectionMatrix();
+}
+const KINDS={
+ bed:[
+  {m:'base',g:'box',p:[0,.2,0],s:[.9,.3,1.9]},
+  {m:'metal',g:'box',p:[0,.42,0],s:[1.04,.12,2.12]},
+  {m:'linen',g:'box',p:[0,.57,.02],s:[.96,.18,1.98],pick:1},
+  {m:'linen',g:'box',p:[0,.71,-.72],s:[.66,.1,.34]},
+  {m:'glow',g:'box',p:[0,.86,-1.07],s:[1.06,.66,.06],col:'st'},
+  {m:'metal',g:'box',p:[0,.62,1.07],s:[1.06,.36,.05]},
+  {m:'blanket',g:'box',p:[0,.72,.3],s:[.92,.15,1.3],col:'soft',occ:1},
+  {m:'skin',g:'sph',p:[0,.84,-.64],s:[.3,.26,.3],occ:1},
+  {m:'metal',g:'cyl',p:[.72,.95,-1.0],s:[.05,1.9,.05]},
+  {m:'glow',g:'box',p:[.72,1.75,-.96],s:[.4,.28,.04],col:'st'},
+  {m:'halo',g:'pl',p:[0,.03,0],s:[2.3,1,3.3],col:'st'}
+ ],
+ inc:[
+  {m:'base',g:'box',p:[0,.33,0],s:[.62,.66,.46]},
+  {m:'metal',g:'box',p:[0,.72,0],s:[.92,.08,.62]},
+  {m:'linen',g:'box',p:[0,.79,0],s:[.8,.05,.5],pick:1},
+  {m:'skin',g:'sph',p:[0,.86,0],s:[.2,.14,.3],occ:1},
+  {m:'blanket',g:'box',p:[0,.85,.06],s:[.26,.06,.22],col:'soft',occ:1},
+  {m:'glass',g:'box',p:[0,1.0,0],s:[.88,.38,.58]},
+  {m:'glow',g:'box',p:[0,.5,.24],s:[.46,.12,.02],col:'st'},
+  {m:'halo',g:'pl',p:[0,.03,0],s:[1.7,1,1.4],col:'st'}
+ ],
+ chair:[
+  {m:'base',g:'box',p:[0,.16,0],s:[.6,.32,.6]},
+  {m:'linen',g:'box',p:[0,.42,.05],s:[.82,.16,.82],pick:1},
+  {m:'linen',g:'box',p:[0,.86,-.36],s:[.82,.82,.14],rx:-.28},
+  {m:'blanket',g:'box',p:[0,.62,.08],s:[.56,.28,.62],col:'soft',occ:1},
+  {m:'skin',g:'sph',p:[0,1.08,-.22],s:[.27,.26,.27],occ:1},
+  {m:'base',g:'box',p:[-.78,.66,-.2],s:[.4,1.32,.4]},
+  {m:'glow',g:'box',p:[-.78,1.12,.01],s:[.3,.22,.02],col:'st'},
+  {m:'halo',g:'pl',p:[0,.03,0],s:[2,1,2],col:'st'}
+ ],
+ room:[
+  {m:'halo',g:'pl',p:[0,.03,0],s:[3.6,1,3.6],col:'st'},
+  {m:'base',g:'box',p:[0,.45,0],s:[.34,.9,.5]},
+  {m:'linen',g:'box',p:[0,.94,0],s:[.74,.08,2.0],pick:1},
+  {m:'blanket',g:'box',p:[0,1.04,.2],s:[.52,.12,1.2],col:'soft',occ:1},
+  {m:'skin',g:'sph',p:[0,1.07,-.72],s:[.26,.22,.26],occ:1},
+  {m:'metal',g:'box',p:[0,2.95,0],s:[.06,1.1,.06]},
+  {m:'glow',g:'cyl',p:[0,2.38,0],s:[1.0,.08,1.0],col:'st'},
+  {m:'base',g:'box',p:[1.3,.75,-1.2],s:[.5,1.5,.45]},
+  {m:'glow',g:'box',p:[1.3,1.2,-.97],s:[.38,.28,.02],col:'st'}
+ ]
+};
+function clearWorld(){
+  for(const o of STG.meshes){STG.world.remove(o);if(o.isInstancedMesh)o.dispose();if(o.userData.own){o.geometry.dispose();if(o.material.map)o.material.map.dispose();o.material.dispose()}}
+  STG.meshes=[];STG.picks=[];
+}
+function labelSprite(t1,t2,color){
+  const c=document.createElement('canvas');c.width=640;c.height=150;const g=c.getContext('2d');
+  g.direction='rtl';
+  const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
+  g.fillStyle='rgba(7,19,27,.88)';rr(6,6,628,138,28);g.fill();g.lineWidth=4;g.strokeStyle=color;g.stroke();
+  g.fillStyle=color;g.fillRect(596,30,8,90);
+  g.textAlign='right';g.fillStyle='#e7f2f5';g.font='600 46px "Readex Pro","IBM Plex Sans Arabic",sans-serif';g.fillText(t1.length>26?t1.slice(0,25)+'…':t1,576,68);
+  g.fillStyle='#93b2bf';g.font='400 34px "Readex Pro","IBM Plex Sans Arabic",sans-serif';g.fillText(t2,576,118);
+  const tx=new THREE.CanvasTexture(c);tx.anisotropy=4;tx.encoding=THREE.sRGBEncoding;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false}));
+  sp.userData.own=true;return sp;
+}
+function unitStatuses(h,d){
+  const cap=Math.max(0,+d.cap||0),out=Math.min(+d.out||0,cap);
+  let occ=S.sim?simOcc(h,d):(d.occ==null||d.occ===''?null:Math.min(+d.occ,cap-out));
+  const a=[];for(let i=0;i<cap;i++){a.push(occ!=null&&i<occ?'occ':(i>=cap-out?'out':(occ==null?'unk':'free')))}
+  return a;
+}
+function deptLabel(h,d){
+  const cap=+d.cap||0,occ=S.sim?simOcc(h,d):d.occ,ty=T(d.t);
+  const unit=ty.k==='room'?'غرفة':ty.k==='inc'?'حضّانة':ty.k==='chair'?'وحدة':'سرير';
+  return occ==null||occ===''?`${cap} ${unit} · لم يُبلَّغ`:`${Math.min(+occ,cap)} مشغول من ${cap}`;
+}
+function buildStage(h,depts,animate){
+  STG.hid=h?h.id:null;
+  updateHud(h,depts);
+  if(!STG.ok){flatRender(h,depts);return}
+  clearWorld(); STG.units=[]; STG.zones=[];
+  if(!h)return;
+  const ds=(depts||[]).filter(d=>(+d.cap||0)>0).map((d,i)=>({d,i})).sort((a,b)=>GORDER.indexOf(T(a.d.t).g)-GORDER.indexOf(T(b.d.t).g)||a.i-b.i).map(x=>x.d);
+  // zone sizes
+  const zs=ds.map(d=>{const k=T(d.t).k,c=CELL[k],n=Math.min(+d.cap,400);const cols=Math.max(1,Math.ceil(Math.sqrt(n*c.d/c.w)*.9));const rows=Math.ceil(n/cols);
+    return {d,k,c,n,cols,rows,w:cols*c.w+1.4,dd:rows*c.d+3.2}});
+  const area=zs.reduce((a,z)=>a+z.w*z.dd,0);const maxW=Math.max(...zs.map(z=>z.w),1);
+  const target=Math.max(maxW,Math.sqrt(area)*1.45);
+  let x=0,z=0,rowD=0;const gap=2.2;
+  for(const zn of zs){if(x>0&&x+zn.w>target){x=0;z+=rowD+gap;rowD=0}zn.x=x;zn.z=z;x+=zn.w+gap;rowD=Math.max(rowD,zn.dd)}
+  let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
+  zs.forEach(zn=>{minX=Math.min(minX,zn.x);maxX=Math.max(maxX,zn.x+zn.w);minZ=Math.min(minZ,zn.z);maxZ=Math.max(maxZ,zn.z+zn.dd)});
+  const cx=(minX+maxX)/2,cz=(minZ+maxZ)/2;
+  STG.bounds={w:maxX-minX,d:maxZ-minZ};
+  const counts={bed:0,inc:0,chair:0,room:0};
+  zs.forEach(zn=>{
+    zn.x-=cx;zn.z-=cz; // RTL: mirror x so first zone sits on the right
+    const X0=-(zn.x+zn.w), Z0=zn.z; zn.cx=X0+zn.w/2; zn.cz=Z0+zn.dd/2;
+    const gc=new THREE.Color(GROUPS[T(zn.d.t).g].c);
+    const plate=new THREE.Mesh(new THREE.BoxGeometry(zn.w,.08,zn.dd),new THREE.MeshStandardMaterial({color:0x0a1b27,roughness:.8,emissive:gc,emissiveIntensity:.06}));
+    plate.position.set(zn.cx,.04,zn.cz);plate.userData.own=true;STG.world.add(plate);STG.meshes.push(plate);
+    const edges=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(zn.w,.08,zn.dd)),new THREE.LineBasicMaterial({color:gc,transparent:true,opacity:.75}));
+    edges.position.copy(plate.position);edges.userData.own=true;STG.world.add(edges);STG.meshes.push(edges);
+    const strip=new THREE.Mesh(new THREE.PlaneGeometry(zn.w,.5).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:gc,transparent:true,opacity:.55}));
+    strip.position.set(zn.cx,.09,Z0+zn.dd-.25);strip.userData.own=true;STG.world.add(strip);STG.meshes.push(strip);
+    const lab=labelSprite(zn.d.name||T(zn.d.t).n,deptLabel(h,zn.d),GROUPS[T(zn.d.t).g].c);
+    const lw=Math.min(12,Math.max(7.5,zn.w*.95));lab.scale.set(lw,lw*150/640,1);lab.position.set(zn.cx,3.4+(zn.k==='room'?1.4:0),Z0+zn.dd-1.2);
+    STG.world.add(lab);STG.meshes.push(lab);zn.label=lab;
+    const sts=unitStatuses(h,zn.d);
+    for(let i=0;i<zn.n;i++){
+      const col=i%zn.cols,row=Math.floor(i/zn.cols);
+      // fill right-to-left
+      const ux=X0+zn.w-.7-zn.c.w*(col+.5), uz=Z0+.6+zn.c.d*(row+.5);
+      STG.units.push({x:ux,z:uz,k:zn.k,st:sts[i],d:zn.d,i,zone:zn,ki:counts[zn.k]++});
+    }
+    STG.zones.push(zn);
+  });
+  // instanced meshes
+  for(const k of Object.keys(KINDS)){
+    const n=counts[k];if(!n)continue;
+    KINDS[k].forEach((pt,pi)=>{
+      const im=new THREE.InstancedMesh(STG.G[pt.g],STG.M[pt.m],n);im.frustumCulled=false;
+      im.userData={k,pi,pt};
+      if(pt.col)for(let j=0;j<n;j++)im.setColorAt(j,new THREE.Color(0xffffff));
+      STG.world.add(im);STG.meshes.push(im);if(pt.pick)STG.picks.push(im);
+    });
+  }
+  const maxD=STG.units.reduce((a,u)=>Math.max(a,Math.hypot(u.x,u.z)),1);
+  STG.units.forEach(u=>{u.delay=(Math.hypot(u.x,u.z)/maxD)*1.1+Math.random()*.15});
+  applyColors();
+  STG.anim=(animate&&!reduce)?{t0:performance.now()}:null;
+  writeMatrices(STG.anim?0:1e9);
+  if(animate)fitAll(true);
+}
+let _m,_q,_e,_p,_s,_c;
+function writeMatrices(tms){
+  const done=tms>=1e8;let allDone=true;
+  for(const im of STG.meshes){
+    if(!im.isInstancedMesh)continue;const {k,pt}=im.userData;
+    for(const u of STG.units){
+      if(u.k!==k)continue;
+      let p=1;if(!done){p=Math.min(1,Math.max(0,(tms/1000-u.delay)/.75));if(p<1)allDone=false}
+      const e=1-Math.pow(1-p,3), back=p<1?(1+2.2*Math.pow(p-1,3)+1.2*Math.pow(p-1,2)):1;
+      const dy=(1-e)*9, sc=p<=0?0:Math.max(.001,Math.min(1.08,back));
+      const hide=pt.occ&&u.st!=='occ';
+      _e.set(pt.rx||0,0,0);_q.setFromEuler(_e);
+      _p.set(u.x+pt.p[0],pt.p[1]*sc+dy,u.z+pt.p[2]);
+      const z=hide?0.0001:sc;_s.set(pt.s[0]*z,pt.s[1]*z,pt.s[2]*z);
+      _m.compose(_p,_q,_s);im.setMatrixAt(u.ki,_m);
+    }
+    im.instanceMatrix.needsUpdate=true;
+  }
+  return allDone;
+}
+function applyColors(){
+  for(const im of STG.meshes){
+    if(!im.isInstancedMesh||!im.userData.pt.col)continue;const soft=im.userData.pt.col==='soft';
+    for(const u of STG.units){if(u.k!==im.userData.k)continue;_c.set(ST[u.st]);if(soft)_c.lerp(new THREE.Color(0xffffff),.35);im.setColorAt(u.ki,_c)}
+    if(im.instanceColor)im.instanceColor.needsUpdate=true;
+  }
+}
+function refreshStage(animate){
+  if(S.view==='portal'&&S.portal.hid){const h=H(S.portal.hid);if(h)buildStage(h,S.portal.draft,animate);return}
+  const h=H(S.sel);buildStage(h,h?h.depts:[],animate);
+}
+function updateHud(h,depts){
+  const n=$('#hud-n'),s=$('#hud-s');if(!n)return;
+  $('#hud-sim').hidden=!S.sim;
+  if(!h){n.textContent='';s.textContent='';return}
+  const st=stats({...h,depts},S.sim);
+  n.textContent=h.name;
+  s.textContent=`${fmt(st.beds)} سرير · ${fmt(st.dial)} غسيل كلوي · ${fmt(st.rooms)} غرفة عمليات`+(st.rate!=null?` · إشغال ${pct(st.rate)}`:'');
+}
+function flatRender(h,depts){
+  let f=$('#stage .flat');if(!f){f=document.createElement('div');f.className='flat';$('#stage').prepend(f)}
+  if(!h){f.innerHTML='';return}
+  f.innerHTML=(depts||[]).filter(d=>+d.cap>0).map(d=>`<div class="z" style="border-color:${GROUPS[T(d.t).g].c}55"><b>${esc(d.name)} · ${esc(deptLabel(h,d))}</b><div class="dots">${unitStatuses(h,d).map(s=>`<i style="background:${ST[s]}"></i>`).join('')}</div></div>`).join('');
+}
+function fitAll(instant){
+  if(!STG.ok||!STG.bounds)return;const b=STG.bounds;const span=Math.max(b.w,b.d*1.25);
+  Object.assign(STG.Og,{tx:0,ty:0,tz:0,r:Math.max(18,span*1.05+8),ph:.9});
+  if(instant)Object.assign(STG.O,{...STG.Og,r:STG.Og.r*1.5,th:STG.Og.th-.6});
+}
+function flyZone(zn){
+  if(!STG.ok||!zn)return;Object.assign(STG.Og,{tx:zn.cx,ty:0,tz:zn.cz,r:Math.max(9,Math.max(zn.w,zn.dd)*1.25+4),ph:.82});
+}
+function startTour(){
+  if(!STG.zones.length)return;let i=0;$('#b-tour').textContent='■ إيقاف';
+  const step=()=>{flyZone(STG.zones[i%STG.zones.length]);hiDept(STG.zones[i%STG.zones.length].d.id);i++};
+  step();STG.tour=setInterval(()=>{if(i>=STG.zones.length){stopTour();fitAll();return}step()},3200);
+}
+function stopTour(){if(STG.tour){clearInterval(STG.tour);STG.tour=null}const b=$('#b-tour');if(b)b.textContent='▶ جولة';hiDept(null)}
+function hiDept(id){$$('.drow').forEach(r=>r.style.borderColor=r.dataset.id===id?'var(--accent)':'')}
+function bindOrbit(cv){
+  let drag=null;const pts=new Map();
+  cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});drag={x:e.clientX,y:e.clientY,moved:0};STG.lastUser=performance.now();stopTour()});
+  cv.addEventListener('pointermove',e=>{
+    const tip=$('#tip');
+    if(pts.has(e.pointerId)){
+      const prev=pts.get(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(pts.size===2){const [a,b]=[...pts.values()];const dist=Math.hypot(a.x-b.x,a.y-b.y);if(drag.pd)STG.Og.r=Math.min(260,Math.max(6,STG.Og.r*drag.pd/dist));drag.pd=dist;return}
+      const dx=e.clientX-prev.x,dy=e.clientY-prev.y;drag.moved+=Math.abs(dx)+Math.abs(dy);
+      STG.Og.th-=dx*.006;STG.Og.ph=Math.min(1.42,Math.max(.25,STG.Og.ph-dy*.005));STG.lastUser=performance.now();tip.hidden=true;return;
+    }
+    const hit=pick(e);
+    if(hit){const u=hit;tip.hidden=false;tip.style.left=e.clientX+'px';tip.style.top=e.clientY+'px';
+      const unit=u.k==='room'?'غرفة':u.k==='inc'?'حضّانة':u.k==='chair'?'وحدة':'سرير';
+      tip.innerHTML=`<b>${esc(u.d.name)}</b><br>${unit} رقم ${u.i+1} · <span style="color:${ST[u.st]}">${ST_N[u.st]}</span>`;cv.style.cursor='pointer'}
+    else{tip.hidden=true;cv.style.cursor=''}
+  });
+  const up=e=>{pts.delete(e.pointerId);if(drag&&drag.moved<6&&pts.size===0){const u=pick(e);if(u){flyZone(u.zone);hiDept(u.d.id)}}if(!pts.size)drag=null};
+  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',e=>{pts.delete(e.pointerId);drag=null});
+  cv.addEventListener('pointerleave',()=>{$('#tip').hidden=true});
+  cv.addEventListener('wheel',e=>{e.preventDefault();STG.Og.r=Math.min(260,Math.max(6,STG.Og.r*(1+Math.sign(e.deltaY)*.09)));STG.lastUser=performance.now()},{passive:false});
+}
+function pick(e){
+  if(!STG.ok||!STG.picks.length)return null;const rc=STG.r.domElement.getBoundingClientRect();
+  STG.mouse.set(((e.clientX-rc.left)/rc.width)*2-1,-((e.clientY-rc.top)/rc.height)*2+1);
+  STG.ray.setFromCamera(STG.mouse,STG.cam);const hits=STG.ray.intersectObjects(STG.picks,false);
+  if(!hits.length||hits[0].instanceId==null)return null;const k=hits[0].object.userData.k,id=hits[0].instanceId;
+  return STG.units.find(u=>u.k===k&&u.ki===id)||null;
+}
+function loop(){
+  requestAnimationFrame(loop);
+  if(!STG.visible||!$('#stage')||!$('#stage').offsetParent)return;
+  const t=STG.clock.getElapsedTime(),O=STG.O,G=STG.Og;
+  if(!reduce&&!STG.tour&&performance.now()-STG.lastUser>3500)G.th+=.0018;
+  for(const k of ['th','ph','r','tx','ty','tz'])O[k]+=(G[k]-O[k])*.07;
+  STG.cam.position.set(O.tx+O.r*Math.sin(O.ph)*Math.sin(O.th),O.ty+O.r*Math.cos(O.ph),O.tz+O.r*Math.sin(O.ph)*Math.cos(O.th));
+  STG.cam.lookAt(O.tx,O.ty+.5,O.tz);
+  if(STG.anim){if(writeMatrices(performance.now()-STG.anim.t0)){STG.anim=null;writeMatrices(1e9)}}
+  STG.M.halo.opacity=.24+Math.sin(t*2.2)*.08;
+  if(!reduce){STG.parts.rotation.y=t*.01;const pa=STG.parts.geometry.attributes.position;for(let i=1;i<pa.array.length;i+=3){pa.array[i]+=.008;if(pa.array[i]>26)pa.array[i]=0}pa.needsUpdate=true}
+  if(STG.bounds){const W=STG.bounds.w+8;const ph=(t*.12)%1;STG.scan.position.x=W/2-ph*W;STG.scan.scale.set(1,STG.bounds.d+6,1);STG.scan.material.opacity=.5}
+  STG.r.render(STG.scene,STG.cam);
+}
+
+/* ======================================================================
+   DASHBOARD
+   ====================================================================== */
+function animateNum(el,to){
+  const from=+el.dataset.v||0;el.dataset.v=to;if(reduce||from===to){el.textContent=fmt(to);return}
+  const t0=performance.now(),d=900;const f=t=>{const p=Math.min(1,(t-t0)/d),e=1-Math.pow(1-p,3);el.textContent=fmt(Math.round(from+(to-from)*e));if(p<1)requestAnimationFrame(f)};requestAnimationFrame(f);
+}
+function renderKPIs(){
+  const all=S.hosp.map(h=>stats(h));const sum=k=>all.reduce((a,s)=>a+(s[k]||0),0);
+  const repCap=sum('repCap'),occ=sum('occ'),reported=S.hosp.filter(h=>h.updatedAt).length;
+  const items=[
+    {l:'إجمالي الأسرّة',v:sum('beds'),s:`في ${S.hosp.length} مستشفيات`,c:'var(--accent)'},
+    {l:'أسرّة الرعايات الحرجة',v:sum('crit'),s:'مركزة · متوسطة · قلب · أطفال · حضانات',c:'var(--g-crit)'},
+    {l:'حضّانات المبتسرين',v:sum('nicu'),s:'ضمن الرعايات الحرجة',c:'var(--g-day)'},
+    {l:'أسرّة الطوارئ',v:sum('er'),s:'ترياج · إنعاش · ملاحظة',c:'var(--g-er)'},
+    {l:'وحدات الغسيل الكلوي',v:sum('dial'),s:`و${fmt(sum('rooms'))} غرفة عمليات`,c:'var(--g-dial)'},
+    {l:'نسبة الإشغال المُبلَّغ',v:null,txt:repCap?pct(occ/repCap):'—',s:`${reported} من ${S.hosp.length} مستشفيات حدّثت`,c:'var(--occ)'}
+  ];
+  const box=$('#kpis');
+  if(box.children.length!==items.length)box.innerHTML=items.map(()=>`<div class="kpi"><div class="l"></div><div class="v num">0</div><div class="s"></div><i class="bar"></i></div>`).join('');
+  items.forEach((it,i)=>{const k=box.children[i];k.style.setProperty('--c',it.c);k.querySelector('.l').textContent=it.l;k.querySelector('.s').textContent=it.s;
+    const v=k.querySelector('.v');if(it.v==null)v.textContent=it.txt;else animateNum(v,it.v)});
+}
+function chipsHTML(){return S.hosp.map(h=>`<button class="chip" type="button" data-h="${esc(h.id)}" aria-pressed="${h.id===S.sel}">${esc(h.name.replace(/^مستشفى\s*/,''))}</button>`).join('')}
+function renderChips(){['#chips-dash','#chips-ward'].forEach(s=>{const c=$(s);c.innerHTML=chipsHTML();c.onclick=e=>{const b=e.target.closest('.chip');if(b)select(b.dataset.h)}})}
+function select(id,noScroll){
+  if(S.sel===id)return;S.sel=id;stopTour();
+  $$('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.h===id));
+  $$('.hcard').forEach(c=>c.classList.toggle('sel',c.dataset.h===id));
+  renderDeptPanels();refreshStage(true);
+  const ch=$(`#chips-${S.view==='ward'?'ward':'dash'} .chip[aria-pressed="true"]`);if(ch&&!noScroll)ch.scrollIntoView({block:'nearest',inline:'center',behavior:reduce?'auto':'smooth'});
+}
+function deptRows(h){
+  if(!h)return '';
+  const ds=[...h.depts].sort((a,b)=>GORDER.indexOf(T(a.t).g)-GORDER.indexOf(T(b.t).g));
+  return ds.map(d=>{const g=GROUPS[T(d.t).g];const cap=+d.cap||0;const occ=S.sim?simOcc(h,d):d.occ;const r=occ==null||occ===''||!cap?null:Math.min(1,occ/cap);
+    return `<button class="drow" type="button" data-id="${esc(d.id)}"><i class="c" style="background:${g.c}"></i><span class="n">${esc(d.name)}<small>${esc(T(d.t).n)}${r!=null?` · إشغال ${pct(r)}`:''}</small>${r!=null?`<div class="occbar"><i style="width:${r*100}%"></i></div>`:''}</span><span class="q">${fmt(cap)}</span></button>`}).join('');
+}
+function renderDeptPanels(){
+  const h=H(S.sel);
+  for(const [t,s,l] of [['#dp-title','#dp-sub','#dp-list'],['#wp-title','#wp-sub','#wp-list']]){
+    $(t).textContent=h?h.name:'الأقسام';
+    const st=h?stats(h):null;
+    $(s).textContent=h?`${h.city||''} · ${h.type||''} · ${fmt(st.beds)} سرير${h.officialTotal?` (المعلن ${fmt(h.officialTotal)})`:''}`:'';
+    const L=$(l);L.innerHTML=h?deptRows(h):'';
+    L.onclick=e=>{const b=e.target.closest('.drow');if(!b)return;stopTour();const zn=STG.zones.find(z=>z.d.id===b.dataset.id);flyZone(zn);hiDept(b.dataset.id)};
+  }
+  $('#ward-title').textContent=h?h.name:'الجناح الافتراضي';
+}
+function ringSVG(rate){
+  const R=24,C=2*Math.PI*R,v=rate==null?0:rate;const col=rate==null?'var(--unk)':rate>.9?'var(--occ)':rate>.75?'var(--warn)':'var(--free)';
+  return `<svg class="ring" viewBox="0 0 58 58" aria-hidden="true"><circle cx="29" cy="29" r="${R}" fill="none" stroke="var(--line)" stroke-width="6"/><circle cx="29" cy="29" r="${R}" fill="none" stroke="${col}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C*v} ${C}" transform="rotate(-90 29 29)"/><text x="29" y="33" text-anchor="middle" fill="var(--fg)" font-family="Readex Pro" font-size="13">${rate==null?'—':Math.round(rate*100)+'%'}</text></svg>`;
+}
+function renderGrid(){
+  const g=$('#hgrid');
+  if(!S.hosp.length){g.innerHTML=`<div class="empty" id="emptyG">${S.dbOk===false?'تعذّر الاتصال بقاعدة البيانات. تأكد من إعدادات Firebase في ملف config.js.':(S.admin&&S.loaded?'قاعدة البيانات فاضية. <button class="btn pri sm" type="button" id="seedBtn">استيراد بيانات الـ10 مستشفيات</button>':'جارٍ تحميل بيانات المستشفيات…')}</div>`;const sb=$('#seedBtn');if(sb)sb.onclick=importSeed;return}
+  $('#hg-sub').textContent=`${S.hosp.length} مستشفيات · اضغط على البطاقة لعرضها في الجناح الافتراضي`;
+  g.innerHTML=S.hosp.map(h=>{
+    const st=stats(h),f=fresh(h);
+    const seg=GORDER.filter(k=>k!=='dial').map(k=>st.byG[k]?`<i style="width:${st.byG[k]/st.beds*100}%;background:${GROUPS[k].c}" title="${GROUPS[k].n}: ${st.byG[k]}"></i>`:'').join('');
+    return `<article class="hcard${h.id===S.sel?' sel':''}" data-h="${esc(h.id)}">
+      <div class="top1"><div style="min-width:0"><h4>${esc(h.name)}</h4><div class="meta">${esc(h.city||'')} · ${esc(h.type||'')}</div></div>${ringSVG(st.rate)}</div>
+      <div class="stack" aria-hidden="true">${seg}</div>
+      <div class="hnums"><div><b>${fmt(st.beds)}</b><span>سرير</span></div><div><b>${fmt(st.crit)}</b><span>رعايات</span></div><div><b>${fmt(st.dial)}</b><span>غسيل</span></div><div><b>${fmt(st.rooms)}</b><span>عمليات</span></div></div>
+      <div class="row" style="justify-content:space-between"><span class="pill ${f.c}">${esc(f.t)}</span>${st.rate!=null?`<span class="meta">${fmt(st.repCap-st.occ-st.out)} متاح الآن</span>`:''}</div>
+      ${(h.facts||[]).length?`<ul class="facts">${h.facts.slice(0,2).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+      <div class="acts"><button class="btn sm" type="button" data-act="view">عرض 3D</button><button class="btn sm" type="button" data-act="edit">تحديث البيانات</button></div>
+    </article>`}).join('');
+  g.onclick=e=>{const c=e.target.closest('.hcard');if(!c)return;const a=e.target.closest('[data-act]');
+    if(a&&a.dataset.act==='edit'){openPortal(c.dataset.h,true);return}
+    if(a&&a.dataset.act==='view'){S.sel=null;location.hash='#ward';select(c.dataset.h);return}
+    select(c.dataset.h);$('#slot-dash').scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'})};
+}
+function renderBars(){
+  $('#bar-keys').innerHTML=GORDER.filter(k=>k!=='dial').map(k=>`<span><i style="background:${GROUPS[k].c}"></i>${GROUPS[k].n}</span>`).join('');
+  const rows=S.hosp.map(h=>({h,s:stats(h)})).sort((a,b)=>b.s.beds-a.s.beds);
+  const max=Math.max(1,...rows.map(r=>r.s.beds));const nice=Math.ceil(max/50)*50;
+  $('#bars').innerHTML=rows.map(({h,s})=>`<div class="brow"><span class="bn" title="${esc(h.name)}">${esc(h.name.replace(/^مستشفى\s*/,''))}</span><span class="bt">${GORDER.filter(k=>k!=='dial').map((k,i)=>s.byG[k]?`<i style="width:${s.byG[k]/nice*100}%;background:${GROUPS[k].c};animation-delay:${i*.08}s" title="${GROUPS[k].n}: ${s.byG[k]}"></i>`:'').join('')}</span><span class="bv">${fmt(s.beds)}</span></div>`).join('')
+   +`<div class="axis"><span></span><span class="ticks">${[0,.25,.5,.75,1].map(f=>`<span>${fmt(nice*f)}</span>`).join('')}</span><span></span></div>`;
+}
+function renderHeat(){
+  const max=Math.max(1,...S.hosp.flatMap(h=>HEATCOLS.map(([t])=>stats(h).byT[t]||0)));
+  $('#heat').innerHTML=`<table><thead><tr><th></th>${HEATCOLS.map(([,n])=>`<th>${n}</th>`).join('')}</tr></thead><tbody>${S.hosp.map(h=>{const s=stats(h);
+    return `<tr><th class="hn" title="${esc(h.name)}">${esc(h.name.replace(/^مستشفى\s*/,''))}</th>${HEATCOLS.map(([t])=>{const v=s.byT[t]||0;const a=v?(.16+.74*v/max):0;
+      return v?`<td style="background:rgba(199,146,255,${a.toFixed(2)});color:${a>.5?'#1a0f2e':'var(--fg)'}">${v}</td>`:`<td class="z">·</td>`}).join('')}</tr>`}).join('')}</tbody></table>`;
+}
+function renderMonthly(){
+  const box=$('#monthly');const hs=S.hosp.filter(h=>h.monthly&&h.monthly.series);
+  if(!hs.length){box.innerHTML=`<h3>مؤشرات الخدمات الشهرية</h3><p class="sub">لا توجد بيانات شهرية حتى الآن</p>`;return}
+  box.innerHTML=hs.map(h=>{const m=h.monthly;return `<h3>مؤشرات الخدمات الشهرية</h3><p class="sub">${esc(h.name)} · ${m.labels.join(' ← ')}</p><div class="minis">${m.series.map(s=>{
+    const mx=Math.max(...s.v),mn=Math.min(...s.v),rng=mx-mn||1;const pts=s.v.map((v,i)=>[10+i*(160/(s.v.length-1)),38-((v-mn)/rng)*28]);
+    const last=s.v[s.v.length-1],prev=s.v[s.v.length-2];const ch=prev?((last-prev)/prev):0;
+    return `<div class="mini"><div class="ml">${esc(s.name)}</div><div class="mv">${fmt(last)} <small style="font-size:12px;color:${ch>=0?'var(--free)':'var(--occ)'}">${ch>=0?'▲':'▼'} ${Math.abs(Math.round(ch*100))}%</small></div>
+      <svg viewBox="0 0 180 46" preserveAspectRatio="none" aria-hidden="true"><path d="M${pts.map(p=>p.join(' ')).join(' L')} L${pts[pts.length-1][0]} 46 L10 46Z" fill="rgba(86,217,232,.12)"/><polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2"/>${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===pts.length-1?3.5:2.2}" fill="${i===pts.length-1?'var(--accent)':'var(--panel)'}" stroke="var(--accent)" stroke-width="1.5"/>`).join('')}</svg></div>`}).join('')}</div>`}).join('');
+}
+function renderLog(){
+  const L=$('#log');
+  if(!S.log.length){L.innerHTML=`<div class="empty">لسه مفيش تحديثات. أول ما مستشفى يحفظ من البوابة هيظهر هنا اسمه ووقت التحديث.</div>`;return}
+  L.innerHTML=S.log.map(l=>`<div class="lrow"><i></i><div><b>${esc(l.hname||'')}</b> — ${esc(l.summary||'')}<small>${esc(l.byEmail||'مستخدم')}</small></div><time datetime="${esc(l.at)}">${esc(rel(l.at)||'')}</time></div>`).join('');
+}
+function renderTools(){
+  const tp=$('#tools-panel');tp.hidden=!S.admin;if(!S.admin)return;
+  const opts=S.hosp.map(h=>`<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('');
+  const keep={acH:$('#acH')&&$('#acH').value,delH:$('#delH')&&$('#delH').value,acE:$('#acE')&&$('#acE').value};
+  const users=S.users.map(u=>`<div class="lrow" style="grid-template-columns:minmax(0,1fr) auto"><div>${esc(u.email)}<small>${esc((H(u.hid)||{}).name||'مستشفى محذوف')}</small></div><button class="btn sm danger" type="button" data-unlink="${esc(u.uid)}">إلغاء الربط</button></div>`).join('')||'<p>لسه مفيش حسابات مستشفيات.</p>';
+  $('#tools').innerHTML=`
+   <div class="tool"><h4>حساب دخول لمستشفى</h4><p>اعمل إيميل وكلمة سر لكل مستشفى. الحساب ده يقدر يعدّل مستشفاه بس.</p>
+     <label class="field" for="acH">المستشفى<select class="inp" id="acH">${opts}</select></label>
+     <label class="field" for="acE">الإيميل<input class="inp" id="acE" type="email" dir="ltr" placeholder="hospital@example.com" autocomplete="off"></label>
+     <label class="field" for="acP">كلمة السر (6 حروف أو أكتر)<input class="inp" id="acP" type="text" dir="ltr" autocomplete="off"></label>
+     <button class="btn pri sm" type="button" id="acAdd">إنشاء الحساب</button><div class="msg" id="acMsg" aria-live="polite"></div>
+     <div class="log" style="max-height:200px">${users}</div></div>
+   <div class="tool"><h4>إضافة مستشفى</h4><p>يظهر فورًا في اللوحة والبوابة، والمستشفى يضيف أقسامه بنفسه.</p>
+     <label class="field" for="nhN">اسم المستشفى<input class="inp" id="nhN" placeholder="مستشفى …"></label>
+     <div class="row"><label class="field" style="flex:1" for="nhC">المركز<input class="inp" id="nhC" placeholder="مثال: مغاغة"></label><label class="field" style="flex:1" for="nhT">النوع<input class="inp" id="nhT" placeholder="تخصصي / مركزي"></label></div>
+     <button class="btn pri sm" type="button" id="nhAdd">إضافة</button><div class="msg" id="nhMsg" aria-live="polite"></div></div>
+   <div class="tool"><h4>تصدير وإدارة</h4><p>تصدير كل الأقسام والسعة والإشغال لملف يفتح في Excel.</p>
+     <button class="btn sm" type="button" id="exp">⬇ تصدير CSV</button>
+     <label class="field" for="delH">حذف مستشفى<select class="inp" id="delH">${opts}</select></label>
+     <div class="row"><button class="btn danger sm" type="button" id="delBtn">حذف</button><span id="delConfirm"></span></div><div class="msg" id="exMsg" aria-live="polite"></div></div>`;
+  if(keep.acH)$('#acH').value=keep.acH; if(keep.delH)$('#delH').value=keep.delH; if(keep.acE)$('#acE').value=keep.acE;
+  $('#acAdd').onclick=async()=>{const hid=$('#acH').value,em=$('#acE').value.trim().toLowerCase(),pw=$('#acP').value,m=$('#acMsg');
+    if(!/^\S+@\S+\.\S+$/.test(em)){m.className='msg err';m.textContent='اكتب إيميل صحيح';return}
+    if(pw.length<6){m.className='msg err';m.textContent='كلمة السر لازم 6 حروف على الأقل';return}
+    m.className='msg';m.textContent='جارٍ الإنشاء…';
+    try{const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(window.FIREBASE_CONFIG,'sec');
+      const cr=await sec.auth().createUserWithEmailAndPassword(em,pw);await fdb.collection('users').doc(cr.user.uid).set({hid,email:em,at:new Date().toISOString()});await sec.auth().signOut();
+      m.className='msg ok';m.textContent=`اتعمل الحساب. ابعت لـ${H(hid).name}: ${em} وكلمة السر`;$('#acE').value='';$('#acP').value=''}
+    catch(e){m.className='msg err';m.textContent=e.code==='auth/email-already-in-use'?'الإيميل ده مستخدم قبل كده':'ماقدرناش نعمل الحساب ('+(e.code||'خطأ')+')'}};
+  $$('[data-unlink]').forEach(b=>b.onclick=async()=>{try{await fdb.collection('users').doc(b.dataset.unlink).delete()}catch(e){$('#acMsg').className='msg err';$('#acMsg').textContent='ماقدرناش نلغي الربط'}});
+  $('#nhAdd').onclick=async()=>{const n=$('#nhN').value.trim(),m=$('#nhMsg');if(n.length<4){m.className='msg err';m.textContent='اكتب اسم المستشفى';return}
+    const id='h-'+Date.now().toString(36);const order=Math.max(0,...S.hosp.map(h=>+h.order||0))+1;
+    try{await fdb.collection('hospitals').doc(id).set({id,name:n,city:$('#nhC').value.trim(),type:$('#nhT').value.trim(),officialTotal:null,source:'أضيف من لوحة الإدارة',depts:[],facts:[],updatedAt:null,updatedBy:null,order});
+      m.className='msg ok';m.textContent='اتضاف '+n;$('#nhN').value=''}catch(e){m.className='msg err';m.textContent='ماقدرناش نضيف المستشفى'}};
+  $('#exp').onclick=exportCSV;
+  $('#delBtn').onclick=()=>{const hid=$('#delH').value;$('#delConfirm').innerHTML=`<button class="btn danger sm" type="button" id="delYes">تأكيد حذف ${esc(H(hid).name.replace(/^مستشفى\s*/,''))}</button>`;
+    $('#delYes').onclick=async()=>{try{await fdb.collection('hospitals').doc(hid).delete();$('#exMsg').className='msg ok';$('#exMsg').textContent='اتحذف المستشفى';$('#delConfirm').innerHTML=''}catch(e){$('#exMsg').className='msg err';$('#exMsg').textContent='ماقدرناش نحذف'}}};
+}
+function exportCSV(){
+  const q=v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
+  const rows=[['المستشفى','المركز','القسم','النوع','الفئة','السعة','المشغول','خارج الخدمة','المتاح','آخر تحديث']];
+  for(const h of S.hosp)for(const d of h.depts){const cap=+d.cap||0,occ=d.occ==null||d.occ===''?'':+d.occ,out=+d.out||0;
+    rows.push([h.name,h.city,d.name,T(d.t).n,GROUPS[T(d.t).g].n,cap,occ,out,occ===''?'':Math.max(0,cap-occ-out),h.updatedAt?new Date(h.updatedAt).toLocaleString('ar-EG'):'من المستندات'])}
+  const blob=new Blob(['﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nabd-beds-minia.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+function renderDashboard(){renderKPIs();renderChips();renderGrid();renderBars();renderHeat();renderMonthly();renderLog();renderTools();renderDeptPanels()}
+
+/* ======================================================================
+   PORTAL
+   ====================================================================== */
+function openPortal(hid,bypass){
+  S.portal={hid,draft:JSON.parse(JSON.stringify(H(hid).depts||[])),dirty:false};
+  if(location.hash!=='#portal')location.hash='#portal';else{renderPortal();mountStage('slot-portal');refreshStage(true)}
+}
+function locked(){return false}
+function parkStage(){const st=$('#stage');if(st&&$('#portal').contains(st))$('#park').appendChild(st)}
+function renderPortal(){
+  parkStage();
+  const P=$('#portal');
+  if(!S.admin){
+    if(!S.myHid||!H(S.myHid)){P.innerHTML=`<div class="gate"><h2>حسابك مش مربوط بمستشفى</h2><p style="color:var(--mute);margin:0">كلّم إدارة المنظومة عشان تربط حسابك بمستشفاك.</p></div>`;return}
+    if(S.portal.hid!==S.myHid)S.portal={hid:S.myHid,draft:JSON.parse(JSON.stringify(H(S.myHid).depts||[])),dirty:false};
+  }
+  const p=S.portal;
+  if(!p.hid||!H(p.hid)){
+    P.innerHTML=`<div class="headline"><div><div class="eyebrow">بوابة المستشفيات</div><h1>اختار مستشفاك</h1><p>حدّث السعة والإشغال والأسرّة المعطلة، والإدارة تشوف التحديث في نفس اللحظة.</p></div></div>
+    ${S.hosp.length?`<div class="pick">${S.hosp.map(h=>{const f=fresh(h);return `<button type="button" data-h="${esc(h.id)}"><b>${esc(h.name)}</b><small>${esc(h.city||'')} · ${fmt(stats(h).beds)} سرير </small><span class="pill ${f.c}">${esc(f.t)}</span></button>`}).join('')}</div>`:`<div class="empty">جارٍ تحميل المستشفيات…</div>`}`;
+    P.onclick=e=>{const b=e.target.closest('.pick button');if(b)openPortal(b.dataset.h)};return;
+  }
+  const h=H(p.hid);
+  if(locked(h.id)){
+    P.innerHTML=`<form class="gate" id="gate"><div class="eyebrow" style="justify-content:center">دخول آمن</div><h2>${esc(h.name)}</h2><p style="color:var(--mute);margin:0">اكتب رمز الدخول اللي وصلك من إدارة المنظومة</p>
+     <input class="inp pin" id="gPin" inputmode="numeric" maxlength="6" autocomplete="one-time-code" aria-label="رمز الدخول" required>
+     <div class="msg" id="gMsg" aria-live="polite"></div><button class="btn pri" type="submit">دخول</button><button class="btn" type="button" id="gBack">مستشفى آخر</button></form>`;
+    $('#gate').onsubmit=e=>{e.preventDefault();const v=$('#gPin').value.trim();if(pinHash(h.id,v)===S.pins[h.id]){ss.set('nabd-unlock-'+h.id,S.pins[h.id]);renderPortal();mountStage('slot-portal');refreshStage(true)}else{$('#gMsg').className='msg err';$('#gMsg').textContent='الرمز غير صحيح، راجع إدارة المنظومة'}};
+    $('#gBack').onclick=()=>{S.portal={hid:null};renderPortal()};P.onclick=null;setTimeout(()=>$('#gPin').focus(),50);return;
+  }
+  const f=fresh(h);
+  P.innerHTML=`<div class="headline"><div><div class="eyebrow">تحديث بيانات المستشفى</div><h1>${esc(h.name)}</h1><p>${esc(h.city||'')} · ${esc(h.type||'')} · المصدر: ${esc(h.source||'')} · <span class="pill ${f.c}">${esc(f.t)}</span></p></div>${S.admin?'<button class="btn" type="button" id="pBack">← مستشفى آخر</button>':''}</div>
+   <div class="editor">
+     <div class="panel">
+       <div class="ed-sum" id="edSum"></div>
+       <div class="etable" id="etable"></div>
+       <div class="row" style="margin-top:10px"><button class="btn sm" type="button" id="addD">+ إضافة قسم</button><button class="btn sm" type="button" id="allFree">كل الأسرّة متاحة</button><button class="btn sm" type="button" id="clrOcc">مسح الإشغال</button></div>
+       <div class="savebar"><div class="msg" id="sMsg" aria-live="polite">عدّل الأرقام ثم احفظ</div><button class="btn" type="button" id="undo">تراجع</button><button class="btn pri" type="button" id="save">حفظ وإرسال للإدارة</button></div>
+     </div>
+     <div class="ed-stage"><div class="slot" id="slot-portal"></div><p class="sub" style="margin-top:8px;color:var(--mute);font-size:12.5px">المعاينة بتتحدث مع كل رقم بتكتبه.</p></div>
+   </div>`;
+  P.onclick=null;
+  if($('#pBack'))$('#pBack').onclick=()=>{S.portal={hid:null};renderPortal()};
+  $('#addD').onclick=()=>{p.draft.push({id:'d'+Date.now().toString(36),t:'ward',name:'قسم جديد',cap:4,occ:null,out:0});dirty(true);renderETable();refreshStage(false)};
+  $('#allFree').onclick=()=>{p.draft.forEach(d=>{d.occ=0;d.out=0});dirty(true);renderETable();refreshStage(false)};
+  $('#clrOcc').onclick=()=>{p.draft.forEach(d=>{d.occ=null});dirty(true);renderETable();refreshStage(false)};
+  $('#undo').onclick=()=>{p.draft=JSON.parse(JSON.stringify(h.depts||[]));dirty(false);renderETable();refreshStage(false)};
+  $('#save').onclick=savePortal;
+  renderETable();
+}
+function dirty(v){S.portal.dirty=v;const m=$('#sMsg');if(m){m.className='msg';m.textContent=v?'فيه تعديلات لسه ما اتحفظتش':'عدّل الأرقام ثم احفظ'}}
+function renderETable(){
+  const p=S.portal,h=H(p.hid);if(!h)return;
+  const st=stats({...h,depts:p.draft});
+  $('#edSum').innerHTML=`<div><b>${fmt(st.beds)}</b><span>إجمالي الأسرّة</span></div><div><b style="color:var(--occ)">${fmt(st.occ)}</b><span>مشغول (مُبلَّغ)</span></div><div><b style="color:var(--free)">${st.repCap?fmt(st.repCap-st.occ-st.out):'—'}</b><span>متاح</span></div><div><b>${pct(st.rate)}</b><span>نسبة الإشغال</span></div>`;
+  const tOpts=t=>Object.entries(TYPES).map(([k,v])=>`<option value="${k}"${k===t?' selected':''}>${v.n}</option>`).join('');
+  const step=(i,f,v,cls)=>`<div class="step ${cls}"><button type="button" data-i="${i}" data-f="${f}" data-d="1" aria-label="زيادة">+</button><input type="number" min="0" inputmode="numeric" data-i="${i}" data-f="${f}" value="${v==null?'':v}" placeholder="—" aria-label="${f==='cap'?'السعة':f==='occ'?'المشغول':'خارج الخدمة'}"><button type="button" data-i="${i}" data-f="${f}" data-d="-1" aria-label="نقص">−</button></div>`;
+  $('#etable').innerHTML=`<div class="erow hdr"><span></span><span>القسم</span><span>النوع</span><span>السعة</span><span>المشغول</span><span>معطل</span><span>المتاح</span><span></span></div>`+
+   (p.draft.length?p.draft.map((d,i)=>{const cap=+d.cap||0,occ=d.occ==null||d.occ===''?null:+d.occ;const free=occ==null?'—':Math.max(0,cap-occ-(+d.out||0));
+    return `<div class="erow"><i class="c" style="background:${GROUPS[T(d.t).g].c}"></i>
+    <input class="inp" data-i="${i}" data-f="name" value="${esc(d.name)}" aria-label="اسم القسم">
+    <select class="inp" data-i="${i}" data-f="t" aria-label="نوع القسم">${tOpts(d.t)}</select>
+    ${step(i,'cap',cap,'')}${step(i,'occ',occ,'occ')}${step(i,'out',+d.out||0,'out')}
+    <span class="free">${free}</span><button class="del" type="button" data-del="${i}" aria-label="حذف القسم">×</button></div>`}).join(''):`<div class="empty">لا توجد أقسام بعد. اضغط «إضافة قسم».</div>`);
+  const tb=$('#etable');
+  tb.oninput=e=>{const el=e.target,i=+el.dataset.i,f=el.dataset.f;if(isNaN(i)||!f)return;const d=p.draft[i];
+    if(f==='name')d.name=el.value;else if(f==='t'){d.t=el.value;renderETable()}else{d[f]=el.value===''?(f==='occ'?null:0):Math.max(0,parseInt(el.value,10)||0);clampD(d)}
+    dirty(true);sumOnly();schedStage(f==='t'||f==='cap'||f==='name')};
+  tb.onclick=e=>{const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.del!=null){p.draft.splice(+b.dataset.del,1);dirty(true);renderETable();refreshStage(false);return}
+    const i=+b.dataset.i,f=b.dataset.f,dd=+b.dataset.d;if(!f)return;const d=p.draft[i];
+    d[f]=Math.max(0,(d[f]==null||d[f]===''?0:+d[f])+dd);clampD(d);dirty(true);
+    const inp=tb.querySelector(`input[data-i="${i}"][data-f="${f}"]`);if(inp)inp.value=d[f];
+    tb.querySelectorAll('.erow')[i+1].querySelector('.free').textContent=d.occ==null?'—':Math.max(0,(+d.cap||0)-d.occ-(+d.out||0));
+    sumOnly();schedStage(f==='cap')};
+}
+function clampD(d){const cap=+d.cap||0;if(d.out>cap)d.out=cap;if(d.occ!=null&&d.occ>cap-(+d.out||0))d.occ=Math.max(0,cap-(+d.out||0))}
+function sumOnly(){const p=S.portal,h=H(p.hid);const st=stats({...h,depts:p.draft});const b=$$('#edSum b');if(b.length===4){b[0].textContent=fmt(st.beds);b[1].textContent=fmt(st.occ);b[2].textContent=st.repCap?fmt(st.repCap-st.occ-st.out):'—';b[3].textContent=pct(st.rate)}
+  $$('#etable .erow').slice(1).forEach((r,i)=>{const d=p.draft[i];if(!d)return;const f=r.querySelector('.free');if(f)f.textContent=d.occ==null?'—':Math.max(0,(+d.cap||0)-d.occ-(+d.out||0))})}
+let stT=null;
+function schedStage(rebuild){clearTimeout(stT);stT=setTimeout(()=>{
+  const h=H(S.portal.hid);if(!h)return;
+  if(!rebuild&&STG.ok&&STG.hid===h.id){ // recolor only
+    for(const u of STG.units){const d=S.portal.draft.find(x=>x.id===u.d.id);if(d){u.d=d;u.st=unitStatuses(h,d)[u.i]||u.st}}
+    applyColors();writeMatrices(1e9);updateHud(h,S.portal.draft);
+    STG.zones.forEach(zn=>{const d=S.portal.draft.find(x=>x.id===zn.d.id);if(!d)return;STG.world.remove(zn.label);zn.label.material.map.dispose();zn.label.material.dispose();
+      const lab=labelSprite(d.name||T(d.t).n,deptLabel(h,d),GROUPS[T(d.t).g].c);lab.scale.copy(zn.label.scale);lab.position.copy(zn.label.position);
+      const ix=STG.meshes.indexOf(zn.label);if(ix>=0)STG.meshes[ix]=lab;zn.label=lab;STG.world.add(lab)});
+  }else refreshStage(false);
+},rebuild?260:60)}
+async function savePortal(){
+  const p=S.portal,h=H(p.hid),m=$('#sMsg'),btn=$('#save');if(!h||!fdb)return;
+  for(const d of p.draft){if(!String(d.name||'').trim()){m.className='msg err';m.textContent='فيه قسم من غير اسم';return}}
+  btn.disabled=true;m.className='msg';m.textContent='جارٍ الحفظ…';
+  const before=stats(h),after=stats({...h,depts:p.draft});const at=new Date().toISOString();
+  const doc={...h,depts:p.draft.map(d=>({id:d.id,t:d.t,name:String(d.name).trim(),cap:+d.cap||0,occ:d.occ==null||d.occ===''?null:+d.occ,out:+d.out||0})),updatedAt:at,updatedBy:S.uid};
+  try{
+    await fdb.collection('hospitals').doc(h.id).set(doc);
+    const parts=[`${fmt(after.beds)} سرير`];if(after.rate!=null)parts.push(`إشغال ${pct(after.rate)} (${fmt(after.occ)} مشغول)`);if(after.beds!==before.beds)parts.push(`السعة ${before.beds}←${after.beds}`);
+    fdb.collection('log').add({hid:h.id,hname:h.name,at,by:S.uid,byEmail:S.email,summary:parts.join(' · ')}).catch(()=>{});
+    p.dirty=false;m.className='msg ok';m.textContent='اتحفظ واتبعت للإدارة ✓';
+  }catch(e){m.className='msg err';m.textContent=e&&e.code==='permission-denied'?'حسابك مش مسموح له يعدّل المستشفى ده':'ماقدرناش نحفظ دلوقتي، حاول تاني'}
+  btn.disabled=false;
+}
+
+/* ======================================================================
+   ROUTING & BOOT
+   ====================================================================== */
+function route(){
+  let v=(location.hash||'').slice(1);if(!['dashboard','ward','portal'].includes(v))v=S.admin?'dashboard':'portal';
+  if(!S.admin&&v!=='portal')v='portal';
+  S.view=v;$$('.view').forEach(s=>s.hidden=s.id!=='v-'+v);
+  $$('#tabs a').forEach(a=>{if(a.dataset.v===v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');a.hidden=!S.admin&&a.dataset.v!=='portal'});
+  stopTour();
+  if(v==='dashboard'){mountStage('slot-dash');refreshStage(false)}
+  if(v==='ward'){mountStage('slot-ward');refreshStage(false)}
+  if(v==='portal'){renderPortal();if(S.portal.hid&&!locked(S.portal.hid)){mountStage('slot-portal');refreshStage(true)}}
+  window.scrollTo({top:0});
+}
+window.addEventListener('hashchange',route);
+
+function onHospitals(list){
+  S.hosp=list.sort((a,b)=>(+a.order||0)-(+b.order||0));S.loaded=true;
+  if(!S.sel||!H(S.sel))S.sel=(S.hosp[0]||{}).id||null;
+  renderDashboard();
+  const p=S.portal;
+  if(S.view==='portal'){
+    if(p.hid&&H(p.hid)&&!p.dirty){p.draft=JSON.parse(JSON.stringify(H(p.hid).depts||[]));}
+    if(!p.dirty)renderPortal();
+    if(p.hid&&!locked(p.hid)){mountStage('slot-portal');if(!p.dirty)refreshStage(false)}
+  }else{
+    const first=!STG.hid;refreshStage(first);
+  }
+}
+async function importSeed(){
+  const b=$('#seedBtn');if(b){b.disabled=true;b.textContent='جارٍ الاستيراد…'}
+  try{const bt=fdb.batch();(window.NABD_SEED||[]).forEach(h=>bt.set(fdb.collection('hospitals').doc(h.id),h));await bt.commit()}
+  catch(e){if(b){b.disabled=false;b.textContent='فشل الاستيراد، حاول تاني'}}
+}
+const subs=[];
+function stopSubs(){while(subs.length)try{subs.pop()()}catch(e){}}
+function loginView(show,msg){
+  const L=$('#login');L.hidden=!show;if(show){$('#lMsg').textContent=msg||'';setTimeout(()=>$('#lEmail').focus(),60)}
+}
+async function boot(){
+  const sp=$('#splash');const hide=()=>sp.classList.add('gone');sp.onclick=hide;setTimeout(hide,reduce?10:3300);
+  $('#aboutBtn').onclick=()=>{$('#about').hidden=false;$('#aboutClose').focus()};
+  $('#aboutClose').onclick=()=>$('#about').hidden=true;$('#about').onclick=e=>{if(e.target.id==='about')$('#about').hidden=true};
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#about').hidden=true});
+  if(!window.firebase||!window.FIREBASE_CONFIG||String(window.FIREBASE_CONFIG.apiKey||'').startsWith('PASTE')){
+    loginView(true,'لسه إعدادات Firebase ما اتحطتش في ملف config.js');setSync(false,'غير مُعدّ');return}
+  firebase.initializeApp(window.FIREBASE_CONFIG);
+  fdb=firebase.firestore();const auth=firebase.auth();
+  $('#lForm').onsubmit=async e=>{e.preventDefault();const m=$('#lMsg'),b=$('#lBtn');m.className='msg';m.textContent='جارٍ الدخول…';b.disabled=true;
+    try{await auth.signInWithEmailAndPassword($('#lEmail').value.trim(),$('#lPass').value)}catch(err){m.className='msg err';m.textContent='الإيميل أو كلمة السر غلط'}b.disabled=false};
+  $('#gBtn').onclick=async()=>{const m=$('#lMsg');m.className='msg';m.textContent='';try{await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())}catch(e){if(e.code!=='auth/popup-closed-by-user'&&e.code!=='auth/cancelled-popup-request'){m.className='msg err';m.textContent='ماقدرناش ندخل بجوجل ('+(e.code||'خطأ')+')'}}};
+  $('#lReset').onclick=async()=>{const em=$('#lEmail').value.trim(),m=$('#lMsg');if(!em){m.className='msg err';m.textContent='اكتب الإيميل الأول';return}
+    try{await auth.sendPasswordResetEmail(em);m.className='msg ok';m.textContent='بعتنا لينك تغيير كلمة السر على الإيميل'}catch(e){m.className='msg err';m.textContent='ماقدرناش نبعت اللينك'}};
+  auth.onAuthStateChanged(async u=>{
+    stopSubs();S.hosp=[];S.loaded=false;S.log=[];S.users=[];
+    $('#who').innerHTML='<span class="sync" id="sync"><i></i>جارٍ الاتصال</span>';
+    if(!u){loginView(true);return}
+    loginView(false);
+    S.uid=u.uid;S.email=(u.email||'').toLowerCase();
+    S.admin=!!u.emailVerified&&(window.ADMIN_EMAILS||[]).map(x=>String(x).toLowerCase()).includes(S.email);
+    S.myHid=null;
+    if(!S.admin){try{const d=await fdb.collection('users').doc(u.uid).get();S.myHid=d.exists?d.data().hid:null}catch(e){}}
+    $('#who').insertAdjacentHTML('beforeend',`<span class="role ${S.admin?'admin':''}">${S.admin?'مدير النظام':'مستخدم مستشفى'}</span><span dir="ltr">${esc(S.email)}</span><button class="btn sm" type="button" id="outBtn">خروج</button>`);
+    $('#outBtn').onclick=()=>auth.signOut();
+    route();
+    const tm=setTimeout(()=>{if(!S.loaded){S.dbOk=false;renderGrid();setSync(false,'تعذّر الاتصال')}},10000);
+    const hq=S.admin?fdb.collection('hospitals'):(S.myHid?fdb.collection('hospitals').where(firebase.firestore.FieldPath.documentId(),'==',S.myHid):null);
+    if(!hq){clearTimeout(tm);S.loaded=true;setSync(true,'متصل');renderPortal();return}
+    subs.push(hq.onSnapshot(snap=>{clearTimeout(tm);S.dbOk=true;setSync(true,'متصل لحظيًا');onHospitals(snap.docs.map(d=>({...d.data(),id:d.id})))},
+      err=>{clearTimeout(tm);S.dbOk=false;renderGrid();setSync(false,'لا توجد صلاحية')}));
+    if(S.admin){
+      subs.push(fdb.collection('log').orderBy('at','desc').limit(30).onSnapshot(snap=>{S.log=snap.docs.map(d=>d.data());renderLog()},()=>{}));
+      subs.push(fdb.collection('users').onSnapshot(snap=>{S.users=snap.docs.map(d=>({...d.data(),uid:d.id}));if(S.loaded)renderTools()},()=>{}));
+    }
+  });
+}
+function setSync(ok,t){const s=$('#sync');s.classList.toggle('live',ok);s.lastChild.textContent=t}
+if(document.fonts&&document.fonts.ready&&window.THREE)document.fonts.ready.then(()=>{if(STG.hid)refreshStage(false)});
+boot();
+})();
+</script>
+</body>
+</html>
