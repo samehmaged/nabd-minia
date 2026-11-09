@@ -1,24 +1,32 @@
 rules_version = '2';
-// نبض الأسرّة — صلاحيات قاعدة البيانات
-// غيّر sammag9519@gmail.com لإيميل مدير النظام (نفس اللي في config.js)
+// Nabd beds system — by Dr. Sameh Maged Saber
+// Public read for everyone with the link; writes only for admins and linked hospital accounts.
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function isAdmin() { return signedIn() && request.auth.token.email_verified == true && request.auth.token.email in ['sammag9519@gmail.com']; }
+    function isAdmin() {
+      return signedIn() && (
+        (request.auth.token.email_verified == true && request.auth.token.email in ['sammag9519@gmail.com'])
+        || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
     function member() { return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
     function myHid() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.hid; }
 
     match /hospitals/{hid} {
-      allow read: if isAdmin() || (member() && myHid() == hid);
+      allow read: if true;
       allow create, delete: if isAdmin();
       allow update: if isAdmin() || (member() && myHid() == hid && request.resource.data.id == hid);
     }
     match /log/{id} {
-      allow read: if isAdmin();
+      allow read: if true;
       allow create: if (isAdmin() || member()) && request.resource.data.by == request.auth.uid;
     }
     match /users/{uid} {
-      allow read: if isAdmin() || request.auth.uid == uid;
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow write: if isAdmin();
+    }
+    match /admins/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
       allow write: if isAdmin();
     }
   }

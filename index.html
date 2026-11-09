@@ -410,14 +410,14 @@ main{padding-block:26px 40px}
   <form class="box" id="lForm" style="max-width:420px;display:flex;flex-direction:column;gap:12px">
     <div class="eyebrow">دخول المنظومة</div>
     <h3 id="l-h" style="margin:0">نبض الأسرّة</h3>
-    <p style="color:var(--mute);margin:0;font-size:13.5px">مدير النظام يشوف كل المستشفيات، وكل مستشفى يدخل بحسابه ويحدّث بياناته.</p>
-    <label class="field" for="lEmail">الإيميل<input class="inp" id="lEmail" type="email" dir="ltr" autocomplete="username" required></label>
+    <p style="color:var(--mute);margin:0;font-size:13.5px">العرض متاح لأي حد معاه اللينك. الدخول للمدير وللمستشفيات عشان التحديث بس.</p>
+    <label class="field" for="lEmail">اسم المستخدم أو الإيميل<input class="inp" id="lEmail" type="text" dir="ltr" autocomplete="username" autocapitalize="off" required></label>
     <label class="field" for="lPass">كلمة السر<input class="inp" id="lPass" type="password" dir="ltr" autocomplete="current-password" required></label>
     <div class="msg" id="lMsg" aria-live="polite"></div>
     <button class="btn pri" id="lBtn" type="submit">دخول</button>
     <div class="row" style="align-items:center;gap:10px;color:var(--dim);font-size:12px"><span style="flex:1;height:1px;background:var(--line)"></span>أو<span style="flex:1;height:1px;background:var(--line)"></span></div>
     <button class="btn" id="gBtn" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>الدخول بحساب جوجل</button>
-    <button class="btn sm" type="button" id="lReset">نسيت كلمة السر</button>
+    <div class="row" style="justify-content:space-between"><button class="btn sm" type="button" id="lReset">نسيت كلمة السر</button><button class="btn sm" type="button" id="lClose">رجوع للعرض</button></div>
     <p style="font-family:var(--f-sign);font-size:20px;margin:6px 0 0;text-align:center;color:var(--mute)">تصميم وتطوير د. سامح ماجد صابر</p>
   </form>
 </div>
@@ -500,11 +500,13 @@ function fresh(h){
   if(d<1)return {c:'ok',t:'محدّث '+rel(h.updatedAt)}; if(d<7)return {c:'mid',t:'آخر تحديث '+rel(h.updatedAt)};
   return {c:'old',t:'يحتاج تحديث · '+rel(h.updatedAt)};
 }
+const toEmail=v=>{v=String(v||'').trim().toLowerCase();return v.includes('@')?v:v.replace(/[^a-z0-9._-]/g,'')+'@nabd-minia.app'};
+const showUser=e=>String(e||'').endsWith('@nabd-minia.app')?e.split('@')[0]:e;
 const pinHash=(hid,pin)=>'p'+hashStr('nabd|'+hid+'|'+pin).toString(36)+hashStr(pin+'|'+hid+'|minia').toString(36);
 
 /* ---------- state ---------- */
 const S={hosp:[],log:[],pins:{},sel:null,view:'dashboard',admin:true,canWrite:null,uid:null,sim:false,loaded:false,dbOk:null,
-  portal:{hid:null,draft:null,dirty:false},names:{},users:[],myHid:null,email:''};
+  portal:{hid:null,draft:null,dirty:false},names:{},users:[],admins:[],myHid:null,email:'',signed:false};
 let fdb=null;
 const H=id=>S.hosp.find(h=>h.id===id);
 
@@ -883,7 +885,7 @@ function ringSVG(rate){
 }
 function renderGrid(){
   const g=$('#hgrid');
-  if(!S.hosp.length){g.innerHTML=`<div class="empty" id="emptyG">${S.dbOk===false?'تعذّر الاتصال بقاعدة البيانات. تأكد من إعدادات Firebase في ملف config.js.':(S.admin&&S.loaded?'قاعدة البيانات فاضية. <button class="btn pri sm" type="button" id="seedBtn">استيراد بيانات الـ10 مستشفيات</button>':'جارٍ تحميل بيانات المستشفيات…')}</div>`;const sb=$('#seedBtn');if(sb)sb.onclick=importSeed;return}
+  if(!S.hosp.length){g.innerHTML=`<div class="empty" id="emptyG">${S.dbOk===false?'تعذّر الاتصال بقاعدة البيانات. تأكد من إعدادات Firebase في ملف config.js.':(S.admin&&S.loaded?'قاعدة البيانات فاضية. <button class="btn pri sm" type="button" id="seedBtn">استيراد بيانات الـ10 مستشفيات</button>':(S.loaded?'لسه مفيش بيانات. المدير يدخل ويضغط «استيراد البيانات».':'جارٍ تحميل بيانات المستشفيات…'))}</div>`;const sb=$('#seedBtn');if(sb)sb.onclick=importSeed;return}
   $('#hg-sub').textContent=`${S.hosp.length} مستشفيات · اضغط على البطاقة لعرضها في الجناح الافتراضي`;
   g.innerHTML=S.hosp.map(h=>{
     const st=stats(h),f=fresh(h);
@@ -894,10 +896,10 @@ function renderGrid(){
       <div class="hnums"><div><b>${fmt(st.beds)}</b><span>سرير</span></div><div><b>${fmt(st.crit)}</b><span>رعايات</span></div><div><b>${fmt(st.dial)}</b><span>غسيل</span></div><div><b>${fmt(st.rooms)}</b><span>عمليات</span></div></div>
       <div class="row" style="justify-content:space-between"><span class="pill ${f.c}">${esc(f.t)}</span>${st.rate!=null?`<span class="meta">${fmt(st.repCap-st.occ-st.out)} متاح الآن</span>`:''}</div>
       ${(h.facts||[]).length?`<ul class="facts">${h.facts.slice(0,2).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
-      <div class="acts"><button class="btn sm" type="button" data-act="view">عرض 3D</button><button class="btn sm" type="button" data-act="edit">تحديث البيانات</button></div>
+      <div class="acts"><button class="btn sm" type="button" data-act="view">عرض 3D</button>${S.admin||h.id===S.myHid?'<button class="btn sm" type="button" data-act="edit">تحديث البيانات</button>':''}</div>
     </article>`}).join('');
   g.onclick=e=>{const c=e.target.closest('.hcard');if(!c)return;const a=e.target.closest('[data-act]');
-    if(a&&a.dataset.act==='edit'){openPortal(c.dataset.h,true);return}
+    if(a&&a.dataset.act==='edit'){if(S.admin)openPortal(c.dataset.h,true);else location.hash='#portal';return}
     if(a&&a.dataset.act==='view'){S.sel=null;location.hash='#ward';select(c.dataset.h);return}
     select(c.dataset.h);$('#slot-dash').scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'})};
 }
@@ -926,20 +928,25 @@ function renderMonthly(){
 function renderLog(){
   const L=$('#log');
   if(!S.log.length){L.innerHTML=`<div class="empty">لسه مفيش تحديثات. أول ما مستشفى يحفظ من البوابة هيظهر هنا اسمه ووقت التحديث.</div>`;return}
-  L.innerHTML=S.log.map(l=>`<div class="lrow"><i></i><div><b>${esc(l.hname||'')}</b> — ${esc(l.summary||'')}<small>${esc(l.byEmail||'مستخدم')}</small></div><time datetime="${esc(l.at)}">${esc(rel(l.at)||'')}</time></div>`).join('');
+  L.innerHTML=S.log.map(l=>`<div class="lrow"><i></i><div><b>${esc(l.hname||'')}</b> — ${esc(l.summary||'')}<small>${esc(l.byLabel||'')}</small></div><time datetime="${esc(l.at)}">${esc(rel(l.at)||'')}</time></div>`).join('');
 }
 function renderTools(){
   const tp=$('#tools-panel');tp.hidden=!S.admin;if(!S.admin)return;
   const opts=S.hosp.map(h=>`<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('');
   const keep={acH:$('#acH')&&$('#acH').value,delH:$('#delH')&&$('#delH').value,acE:$('#acE')&&$('#acE').value};
-  const users=S.users.map(u=>`<div class="lrow" style="grid-template-columns:minmax(0,1fr) auto"><div>${esc(u.email)}<small>${esc((H(u.hid)||{}).name||'مستشفى محذوف')}</small></div><button class="btn sm danger" type="button" data-unlink="${esc(u.uid)}">إلغاء الربط</button></div>`).join('')||'<p>لسه مفيش حسابات مستشفيات.</p>';
+  const users=S.users.map(u=>`<div class="lrow" style="grid-template-columns:minmax(0,1fr) auto"><div><span dir="ltr">${esc(showUser(u.email))}</span><small>${esc((H(u.hid)||{}).name||'مستشفى محذوف')}</small></div><button class="btn sm danger" type="button" data-unlink="${esc(u.uid)}">إلغاء الربط</button></div>`).join('')||'<p>لسه مفيش حسابات مستشفيات.</p>';
   $('#tools').innerHTML=`
-   <div class="tool"><h4>حساب دخول لمستشفى</h4><p>اعمل إيميل وكلمة سر لكل مستشفى. الحساب ده يقدر يعدّل مستشفاه بس.</p>
+   <div class="tool"><h4>حساب دخول لمستشفى</h4><p>اعمل اسم مستخدم وكلمة سر لكل مستشفى. الحساب ده يعدّل مستشفاه بس.</p>
      <label class="field" for="acH">المستشفى<select class="inp" id="acH">${opts}</select></label>
-     <label class="field" for="acE">الإيميل<input class="inp" id="acE" type="email" dir="ltr" placeholder="hospital@example.com" autocomplete="off"></label>
+     <label class="field" for="acE">اسم المستخدم أو الإيميل<input class="inp" id="acE" dir="ltr" placeholder="mallawi" autocomplete="off" autocapitalize="off"></label>
      <label class="field" for="acP">كلمة السر (6 حروف أو أكتر)<input class="inp" id="acP" type="text" dir="ltr" autocomplete="off"></label>
      <button class="btn pri sm" type="button" id="acAdd">إنشاء الحساب</button><div class="msg" id="acMsg" aria-live="polite"></div>
      <div class="log" style="max-height:200px">${users}</div></div>
+   <div class="tool"><h4>حساب مدير</h4><p>اعمل اسم مستخدم وكلمة سر لمدير. أي حساب هنا يشوف ويعدّل كل حاجة.</p>
+     <label class="field" for="adU">اسم المستخدم<input class="inp" id="adU" dir="ltr" placeholder="admin" autocomplete="off" autocapitalize="off"></label>
+     <label class="field" for="adP">كلمة السر (6 حروف أو أكتر)<input class="inp" id="adP" type="text" dir="ltr" autocomplete="off"></label>
+     <button class="btn pri sm" type="button" id="adAdd">إنشاء حساب المدير</button><div class="msg" id="adMsg" aria-live="polite"></div>
+     <div class="log" style="max-height:160px">${(S.admins||[]).map(a=>`<div class="lrow" style="grid-template-columns:minmax(0,1fr) auto"><div dir="ltr" style="text-align:right">${esc(showUser(a.email))}</div>${a.uid===S.uid?'<small>إنت</small>':`<button class="btn sm danger" type="button" data-unadmin="${esc(a.uid)}">إلغاء</button>`}</div>`).join('')}</div></div>
    <div class="tool"><h4>إضافة مستشفى</h4><p>يظهر فورًا في اللوحة والبوابة، والمستشفى يضيف أقسامه بنفسه.</p>
      <label class="field" for="nhN">اسم المستشفى<input class="inp" id="nhN" placeholder="مستشفى …"></label>
      <div class="row"><label class="field" style="flex:1" for="nhC">المركز<input class="inp" id="nhC" placeholder="مثال: مغاغة"></label><label class="field" style="flex:1" for="nhT">النوع<input class="inp" id="nhT" placeholder="تخصصي / مركزي"></label></div>
@@ -949,14 +956,23 @@ function renderTools(){
      <label class="field" for="delH">حذف مستشفى<select class="inp" id="delH">${opts}</select></label>
      <div class="row"><button class="btn danger sm" type="button" id="delBtn">حذف</button><span id="delConfirm"></span></div><div class="msg" id="exMsg" aria-live="polite"></div></div>`;
   if(keep.acH)$('#acH').value=keep.acH; if(keep.delH)$('#delH').value=keep.delH; if(keep.acE)$('#acE').value=keep.acE;
-  $('#acAdd').onclick=async()=>{const hid=$('#acH').value,em=$('#acE').value.trim().toLowerCase(),pw=$('#acP').value,m=$('#acMsg');
-    if(!/^\S+@\S+\.\S+$/.test(em)){m.className='msg err';m.textContent='اكتب إيميل صحيح';return}
+  $('#acAdd').onclick=async()=>{const hid=$('#acH').value,raw=$('#acE').value.trim(),em=toEmail(raw),pw=$('#acP').value,m=$('#acMsg');
+    if(raw.length<3){m.className='msg err';m.textContent='اكتب اسم مستخدم أو إيميل';return}
     if(pw.length<6){m.className='msg err';m.textContent='كلمة السر لازم 6 حروف على الأقل';return}
     m.className='msg';m.textContent='جارٍ الإنشاء…';
     try{const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(window.FIREBASE_CONFIG,'sec');
       const cr=await sec.auth().createUserWithEmailAndPassword(em,pw);await fdb.collection('users').doc(cr.user.uid).set({hid,email:em,at:new Date().toISOString()});await sec.auth().signOut();
-      m.className='msg ok';m.textContent=`اتعمل الحساب. ابعت لـ${H(hid).name}: ${em} وكلمة السر`;$('#acE').value='';$('#acP').value=''}
+      m.className='msg ok';m.textContent=`اتعمل الحساب. ابعت لـ${H(hid).name}: ${showUser(em)} وكلمة السر`;$('#acE').value='';$('#acP').value=''}
     catch(e){m.className='msg err';m.textContent=e.code==='auth/email-already-in-use'?'الإيميل ده مستخدم قبل كده':'ماقدرناش نعمل الحساب ('+(e.code||'خطأ')+')'}};
+  $('#adAdd').onclick=async()=>{const un=$('#adU').value.trim(),pw=$('#adP').value,m=$('#adMsg');const em=toEmail(un);
+    if(un.length<3){m.className='msg err';m.textContent='اسم المستخدم 3 حروف على الأقل (إنجليزي)';return}
+    if(pw.length<6){m.className='msg err';m.textContent='كلمة السر لازم 6 حروف على الأقل';return}
+    m.className='msg';m.textContent='جارٍ الإنشاء…';
+    try{const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(window.FIREBASE_CONFIG,'sec');
+      const cr=await sec.auth().createUserWithEmailAndPassword(em,pw);await fdb.collection('admins').doc(cr.user.uid).set({email:em,at:new Date().toISOString()});await sec.auth().signOut();
+      m.className='msg ok';m.textContent='اتعمل حساب المدير: '+showUser(em);$('#adU').value='';$('#adP').value=''}
+    catch(e){m.className='msg err';m.textContent=e.code==='auth/email-already-in-use'?'اسم المستخدم ده موجود':'ماقدرناش نعمل الحساب ('+(e.code||'خطأ')+')'}};
+  $$('[data-unadmin]').forEach(b=>b.onclick=async()=>{try{await fdb.collection('admins').doc(b.dataset.unadmin).delete()}catch(e){}});
   $$('[data-unlink]').forEach(b=>b.onclick=async()=>{try{await fdb.collection('users').doc(b.dataset.unlink).delete()}catch(e){$('#acMsg').className='msg err';$('#acMsg').textContent='ماقدرناش نلغي الربط'}});
   $('#nhAdd').onclick=async()=>{const n=$('#nhN').value.trim(),m=$('#nhMsg');if(n.length<4){m.className='msg err';m.textContent='اكتب اسم المستشفى';return}
     const id='h-'+Date.now().toString(36);const order=Math.max(0,...S.hosp.map(h=>+h.order||0))+1;
@@ -988,6 +1004,7 @@ function parkStage(){const st=$('#stage');if(st&&$('#portal').contains(st))$('#p
 function renderPortal(){
   parkStage();
   const P=$('#portal');
+  if(!S.signed){P.innerHTML=`<div class="gate"><div class="eyebrow" style="justify-content:center">بوابة المستشفيات</div><h2>التحديث محتاج تسجيل دخول</h2><p style="color:var(--mute);margin:0">ادخل بحساب المستشفى اللي وصلك من الإدارة عشان تحدّث الأسرّة والإشغال.</p><button class="btn pri" type="button" id="pIn">دخول</button></div>`;$('#pIn').onclick=()=>loginView(true);return}
   if(!S.admin){
     if(!S.myHid||!H(S.myHid)){P.innerHTML=`<div class="gate"><h2>حسابك مش مربوط بمستشفى</h2><p style="color:var(--mute);margin:0">كلّم إدارة المنظومة عشان تربط حسابك بمستشفاك.</p></div>`;return}
     if(S.portal.hid!==S.myHid)S.portal={hid:S.myHid,draft:JSON.parse(JSON.stringify(H(S.myHid).depts||[])),dirty:false};
@@ -1075,7 +1092,7 @@ async function savePortal(){
   try{
     await fdb.collection('hospitals').doc(h.id).set(doc);
     const parts=[`${fmt(after.beds)} سرير`];if(after.rate!=null)parts.push(`إشغال ${pct(after.rate)} (${fmt(after.occ)} مشغول)`);if(after.beds!==before.beds)parts.push(`السعة ${before.beds}←${after.beds}`);
-    fdb.collection('log').add({hid:h.id,hname:h.name,at,by:S.uid,byEmail:S.email,summary:parts.join(' · ')}).catch(()=>{});
+    fdb.collection('log').add({hid:h.id,hname:h.name,at,by:S.uid,byLabel:S.admin?'من الإدارة':'من المستشفى',summary:parts.join(' · ')}).catch(()=>{});
     p.dirty=false;m.className='msg ok';m.textContent='اتحفظ واتبعت للإدارة ✓';
   }catch(e){m.className='msg err';m.textContent=e&&e.code==='permission-denied'?'حسابك مش مسموح له يعدّل المستشفى ده':'ماقدرناش نحفظ دلوقتي، حاول تاني'}
   btn.disabled=false;
@@ -1085,10 +1102,9 @@ async function savePortal(){
    ROUTING & BOOT
    ====================================================================== */
 function route(){
-  let v=(location.hash||'').slice(1);if(!['dashboard','ward','portal'].includes(v))v=S.admin?'dashboard':'portal';
-  if(!S.admin&&v!=='portal')v='portal';
+  let v=(location.hash||'').slice(1);if(!['dashboard','ward','portal'].includes(v))v='dashboard';
   S.view=v;$$('.view').forEach(s=>s.hidden=s.id!=='v-'+v);
-  $$('#tabs a').forEach(a=>{if(a.dataset.v===v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');a.hidden=!S.admin&&a.dataset.v!=='portal'});
+  $$('#tabs a').forEach(a=>{if(a.dataset.v===v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');a.hidden=false});
   stopTour();
   if(v==='dashboard'){mountStage('slot-dash');refreshStage(false)}
   if(v==='ward'){mountStage('slot-ward');refreshStage(false)}
@@ -1124,38 +1140,47 @@ async function boot(){
   const sp=$('#splash');const hide=()=>sp.classList.add('gone');sp.onclick=hide;setTimeout(hide,reduce?10:3300);
   $('#aboutBtn').onclick=()=>{$('#about').hidden=false;$('#aboutClose').focus()};
   $('#aboutClose').onclick=()=>$('#about').hidden=true;$('#about').onclick=e=>{if(e.target.id==='about')$('#about').hidden=true};
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#about').hidden=true});
-  if(!window.firebase||!window.FIREBASE_CONFIG||String(window.FIREBASE_CONFIG.apiKey||'').startsWith('PASTE')){
-    loginView(true,'لسه إعدادات Firebase ما اتحطتش في ملف config.js');setSync(false,'غير مُعدّ');return}
+  $('#login').onclick=e=>{if(e.target.id==='login')loginView(false)};$('#lClose').onclick=()=>loginView(false);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#about').hidden=true;loginView(false)}});
+  if(!window.firebase||!window.FIREBASE_CONFIG||String(window.FIREBASE_CONFIG.apiKey||'').startsWith('PASTE')){setSync(false,'غير مُعدّ');S.dbOk=false;renderGrid();return}
   firebase.initializeApp(window.FIREBASE_CONFIG);
   fdb=firebase.firestore();const auth=firebase.auth();
   $('#lForm').onsubmit=async e=>{e.preventDefault();const m=$('#lMsg'),b=$('#lBtn');m.className='msg';m.textContent='جارٍ الدخول…';b.disabled=true;
-    try{await auth.signInWithEmailAndPassword($('#lEmail').value.trim(),$('#lPass').value)}catch(err){m.className='msg err';m.textContent='الإيميل أو كلمة السر غلط'}b.disabled=false};
+    try{await auth.signInWithEmailAndPassword(toEmail($('#lEmail').value),$('#lPass').value)}catch(err){m.className='msg err';m.textContent='اسم المستخدم أو كلمة السر غلط'}b.disabled=false};
   $('#gBtn').onclick=async()=>{const m=$('#lMsg');m.className='msg';m.textContent='';try{await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())}catch(e){if(e.code!=='auth/popup-closed-by-user'&&e.code!=='auth/cancelled-popup-request'){m.className='msg err';m.textContent='ماقدرناش ندخل بجوجل ('+(e.code||'خطأ')+')'}}};
-  $('#lReset').onclick=async()=>{const em=$('#lEmail').value.trim(),m=$('#lMsg');if(!em){m.className='msg err';m.textContent='اكتب الإيميل الأول';return}
-    try{await auth.sendPasswordResetEmail(em);m.className='msg ok';m.textContent='بعتنا لينك تغيير كلمة السر على الإيميل'}catch(e){m.className='msg err';m.textContent='ماقدرناش نبعت اللينك'}};
+  $('#lReset').onclick=async()=>{const v=$('#lEmail').value.trim(),m=$('#lMsg');if(!v.includes('@')){m.className='msg err';m.textContent='اكتب الإيميل الحقيقي. حسابات اسم المستخدم يغيّر كلمة سرها المدير.';return}
+    try{await auth.sendPasswordResetEmail(v);m.className='msg ok';m.textContent='بعتنا لينك تغيير كلمة السر على الإيميل'}catch(e){m.className='msg err';m.textContent='ماقدرناش نبعت اللينك'}};
+  // public data: everyone with the link sees it
+  const tm=setTimeout(()=>{if(!S.loaded){S.dbOk=false;renderGrid();setSync(false,'تعذّر الاتصال')}},10000);
+  fdb.collection('hospitals').onSnapshot(snap=>{clearTimeout(tm);S.dbOk=true;setSync(true,'متصل لحظيًا');onHospitals(snap.docs.map(d=>({...d.data(),id:d.id})))},
+    err=>{clearTimeout(tm);S.dbOk=false;renderGrid();setSync(false,'تعذّر الاتصال')});
+  fdb.collection('log').orderBy('at','desc').limit(30).onSnapshot(snap=>{S.log=snap.docs.map(d=>d.data());renderLog()},()=>{});
   auth.onAuthStateChanged(async u=>{
-    stopSubs();S.hosp=[];S.loaded=false;S.log=[];S.users=[];
-    $('#who').innerHTML='<span class="sync" id="sync"><i></i>جارٍ الاتصال</span>';
-    if(!u){loginView(true);return}
-    loginView(false);
-    S.uid=u.uid;S.email=(u.email||'').toLowerCase();
-    S.admin=!!u.emailVerified&&(window.ADMIN_EMAILS||[]).map(x=>String(x).toLowerCase()).includes(S.email);
-    S.myHid=null;
-    if(!S.admin){try{const d=await fdb.collection('users').doc(u.uid).get();S.myHid=d.exists?d.data().hid:null}catch(e){}}
-    $('#who').insertAdjacentHTML('beforeend',`<span class="role ${S.admin?'admin':''}">${S.admin?'مدير النظام':'مستخدم مستشفى'}</span><span dir="ltr">${esc(S.email)}</span><button class="btn sm" type="button" id="outBtn">خروج</button>`);
-    $('#outBtn').onclick=()=>auth.signOut();
-    route();
-    const tm=setTimeout(()=>{if(!S.loaded){S.dbOk=false;renderGrid();setSync(false,'تعذّر الاتصال')}},10000);
-    const hq=S.admin?fdb.collection('hospitals'):(S.myHid?fdb.collection('hospitals').where(firebase.firestore.FieldPath.documentId(),'==',S.myHid):null);
-    if(!hq){clearTimeout(tm);S.loaded=true;setSync(true,'متصل');renderPortal();return}
-    subs.push(hq.onSnapshot(snap=>{clearTimeout(tm);S.dbOk=true;setSync(true,'متصل لحظيًا');onHospitals(snap.docs.map(d=>({...d.data(),id:d.id})))},
-      err=>{clearTimeout(tm);S.dbOk=false;renderGrid();setSync(false,'لا توجد صلاحية')}));
-    if(S.admin){
-      subs.push(fdb.collection('log').orderBy('at','desc').limit(30).onSnapshot(snap=>{S.log=snap.docs.map(d=>d.data());renderLog()},()=>{}));
-      subs.push(fdb.collection('users').onSnapshot(snap=>{S.users=snap.docs.map(d=>({...d.data(),uid:d.id}));if(S.loaded)renderTools()},()=>{}));
+    stopSubs();S.users=[];S.admin=false;S.myHid=null;S.uid=null;S.email='';S.signed=!!u;
+    if(u){
+      loginView(false);
+      S.uid=u.uid;S.email=(u.email||'').toLowerCase();
+      const byMail=!!u.emailVerified&&(window.ADMIN_EMAILS||[]).map(x=>String(x).toLowerCase()).includes(S.email);
+      let byDoc=false;try{byDoc=(await fdb.collection('admins').doc(u.uid).get()).exists}catch(e){}
+      S.admin=byMail||byDoc;
+      if(!S.admin){try{const d=await fdb.collection('users').doc(u.uid).get();S.myHid=d.exists?d.data().hid:null}catch(e){}}
+      if(S.admin){
+        subs.push(fdb.collection('users').onSnapshot(snap=>{S.users=snap.docs.map(d=>({...d.data(),uid:d.id}));if(S.loaded)renderTools()},()=>{}));
+        subs.push(fdb.collection('admins').onSnapshot(snap=>{S.admins=snap.docs.map(d=>({...d.data(),uid:d.id}));if(S.loaded)renderTools()},()=>{}));
+      }
     }
+    renderWho(auth);
+    if(S.signed&&!S.admin&&S.myHid&&!location.hash)location.hash='#portal';
+    if(S.loaded)renderDashboard();
+    route();
   });
+}
+function renderWho(auth){
+  const w=$('#who');[...w.children].forEach(c=>{if(c.id!=='sync')c.remove()});
+  if(!S.signed){w.insertAdjacentHTML('beforeend',`<span class="role">عرض عام</span><button class="btn sm pri" type="button" id="inBtn">دخول</button>`);$('#inBtn').onclick=()=>loginView(true);return}
+  const label=S.admin?'مدير النظام':(S.myHid&&H(S.myHid)?H(S.myHid).name.replace(/^مستشفى\s*/,''):'مستخدم');
+  w.insertAdjacentHTML('beforeend',`<span class="role ${S.admin?'admin':''}">${esc(label)}</span><span dir="ltr">${esc(showUser(S.email))}</span><button class="btn sm" type="button" id="outBtn">خروج</button>`);
+  $('#outBtn').onclick=()=>auth.signOut();
 }
 function setSync(ok,t){const s=$('#sync');s.classList.toggle('live',ok);s.lastChild.textContent=t}
 if(document.fonts&&document.fonts.ready&&window.THREE)document.fonts.ready.then(()=>{if(STG.hid)refreshStage(false)});
